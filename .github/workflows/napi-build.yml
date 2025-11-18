@@ -1,0 +1,67 @@
+name: NAPI Build
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build NAPI - ${{ matrix.settings.target }}
+    runs-on: ${{ matrix.settings.host }}
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - host: macos-latest
+            target: x86_64-apple-darwin
+            build: |
+              cd crates && cargo build --release -p danny-napi
+              cp target/release/libdanny_napi.dylib ../packages/danny/native/index.node
+          - host: macos-latest
+            target: aarch64-apple-darwin
+            build: |
+              cd crates
+              rustup target add aarch64-apple-darwin
+              cargo build --release --target aarch64-apple-darwin -p danny-napi
+              cp target/aarch64-apple-darwin/release/libdanny_napi.dylib ../packages/danny/native/index.node
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            build: |
+              cd crates && cargo build --release -p danny-napi
+              cp target/release/libdanny_napi.so ../packages/danny/native/index.node
+          - host: windows-latest
+            target: x86_64-pc-windows-msvc
+            build: |
+              cd crates && cargo build --release -p danny-napi
+              cp target/release/danny_napi.dll ../packages/danny/native/index.node
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.settings.target }}
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            crates/target
+          key: ${{ matrix.settings.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build
+        run: ${{ matrix.settings.build }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-${{ matrix.settings.target }}
+          path: packages/danny/native/index.node
+          if-no-files-found: error

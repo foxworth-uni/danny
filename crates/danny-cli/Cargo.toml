@@ -1,0 +1,52 @@
+[package]
+name = "danny-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "danny"
+path = "src/main.rs"
+
+[dependencies]
+# Core library
+danny-core = { path = "../danny-core" }
+danny-backend-js = { path = "../danny-backend-js" }
+danny-config.workspace = true
+danny-rule-engine = { path = "../danny-rule-engine" }
+danny-feed = { path = "../../../danny-desktop/crates/danny-feed" }
+danny-deps = { path = "../../../danny-desktop/crates/danny-deps" }
+danny-fs = { workspace = true }
+
+# CLI
+clap = { version = "4.5.0", features = ["derive"] }
+
+# Error handling
+anyhow.workspace = true
+thiserror.workspace = true
+
+# Serialization
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+
+# Time handling
+chrono.workspace = true
+
+# Async runtime
+tokio.workspace = true
+tokio-stream.workspace = true
+
+# File system
+glob.workspace = true
+globset.workspace = true
+ignore.workspace = true
+
+# Temporary directories (for tests)
+tempfile = "3.8"
+
+# Pretty error reporting
+miette = { version = "7.2.0", features = ["fancy"] }
+
+# Colored terminal output
+colored = "3.0.0"

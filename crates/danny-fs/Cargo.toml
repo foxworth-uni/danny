@@ -1,0 +1,37 @@
+[package]
+name = "danny-fs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Platform-agnostic filesystem abstraction for Danny"
+
+[features]
+default = ["native"]
+native = ["ignore", "tokio/fs"]
+wasm = ["parking_lot"]
+
+# For testing: allow both features simultaneously
+test-dual = ["native", "wasm"]
+
+[dependencies]
+async-trait = { workspace = true }
+
+# Native-only dependencies
+ignore = { workspace = true, optional = true }
+
+# WASM-only dependencies
+parking_lot = { version = "0.12", optional = true }
+
+# Platform-specific tokio configuration
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+tokio = { version = "1.42", features = ["sync", "macros", "io-util"] }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+proptest = "1.4"
+

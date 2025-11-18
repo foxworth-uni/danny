@@ -1,0 +1,53 @@
+[package]
+name = "danny-rule-engine"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[features]
+default = ["native-fs"]
+native-fs = ["danny-fs/native", "walkdir", "dirs"]
+wasm = ["danny-fs/wasm"]
+
+[dependencies]
+# Error handling
+anyhow.workspace = true
+thiserror.workspace = true
+
+# Serialization (TOML parsing)
+serde.workspace = true
+toml.workspace = true
+
+# Pattern matching
+regex.workspace = true
+globset.workspace = true
+
+# Danny filesystem abstraction
+danny-fs = { workspace = true }
+
+# Path handling (optional, only for native-fs)
+walkdir = { workspace = true, optional = true }
+dirs = { workspace = true, optional = true }
+
+# Async
+async-trait.workspace = true
+
+# Fob integration
+fob.workspace = true
+
+# Platform-specific tokio configuration
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+tokio = { version = "1.42", features = ["sync", "macros"] }
+
+[dev-dependencies]
+tempfile.workspace = true
+criterion = "0.5"
+
+# TODO: Add benchmarks
+# [[bench]]
+# name = "rule_matching"
+# harness = false

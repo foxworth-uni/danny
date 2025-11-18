@@ -1,0 +1,156 @@
+[framework]
+name = "Vue"
+description = "Marks Vue composables as framework-used"
+version = "1.0.0"
+priority = 50
+
+# Framework Detection Rules
+[[framework.detection]]
+type = "import"
+pattern = "^vue$"
+weight = 1.0
+
+[[framework.detection]]
+type = "import"
+pattern = "^@vue/"
+weight = 0.9
+
+[[framework.detection]]
+type = "package_dependency"
+pattern = "vue"
+weight = 1.0
+
+[[framework.detection]]
+type = "file_extension"
+pattern = ".vue"
+weight = 0.8
+
+[[framework.detection]]
+type = "file_path"
+pattern = "nuxt.config.{ts,js}"
+weight = 0.9
+
+# Entry Points: File discovery patterns (BEFORE analysis)
+# These glob patterns are used to discover entry point files that seed the dependency graph.
+
+# Nuxt 3: Pages
+[[entry_points]]
+name = "nuxt3-pages"
+description = "Nuxt 3 page files"
+patterns = [
+    "pages/**/*.{vue,ts,tsx,js,jsx}",
+    "src/pages/**/*.{vue,ts,tsx,js,jsx}"
+]
+priority = 100
+
+# Nuxt 3: Layouts
+[[entry_points]]
+name = "nuxt3-layouts"
+description = "Nuxt 3 layout files"
+patterns = [
+    "layouts/**/*.{vue,ts,tsx,js,jsx}",
+    "src/layouts/**/*.{vue,ts,tsx,js,jsx}"
+]
+priority = 95
+
+# Nuxt 3: Components
+[[entry_points]]
+name = "nuxt3-components"
+description = "Nuxt 3 component files"
+patterns = [
+    "components/**/*.{vue,ts,tsx,js,jsx}",
+    "src/components/**/*.{vue,ts,tsx,js,jsx}"
+]
+priority = 90
+
+# Nuxt 3: Middleware
+[[entry_points]]
+name = "nuxt3-middleware"
+description = "Nuxt 3 middleware files"
+patterns = [
+    "middleware/**/*.{ts,js}",
+    "src/middleware/**/*.{ts,js}"
+]
+priority = 90
+
+# Nuxt 3: Server Routes
+[[entry_points]]
+name = "nuxt3-server-routes"
+description = "Nuxt 3 server route files"
+patterns = [
+    "server/api/**/*.{ts,js}",
+    "server/routes/**/*.{ts,js}",
+    "src/server/api/**/*.{ts,js}",
+    "src/server/routes/**/*.{ts,js}"
+]
+priority = 90
+
+# Nuxt 3: Server Middleware
+[[entry_points]]
+name = "nuxt3-server-middleware"
+description = "Nuxt 3 server middleware files"
+patterns = [
+    "server/middleware/**/*.{ts,js}",
+    "src/server/middleware/**/*.{ts,js}"
+]
+priority = 85
+
+# Nuxt 3: Plugins
+[[entry_points]]
+name = "nuxt3-plugins"
+description = "Nuxt 3 plugin files"
+patterns = [
+    "plugins/**/*.{ts,js}",
+    "src/plugins/**/*.{ts,js}"
+]
+priority = 85
+
+# Nuxt 3: Composables
+[[entry_points]]
+name = "nuxt3-composables"
+description = "Nuxt 3 composable files"
+patterns = [
+    "composables/**/*.{ts,js}",
+    "src/composables/**/*.{ts,js}"
+]
+priority = 80
+
+# Nuxt 3: App Config
+[[entry_points]]
+name = "nuxt3-app-config"
+description = "Nuxt 3 app configuration files"
+patterns = [
+    "app.config.{ts,js}",
+    "nuxt.config.{ts,js}",
+    "src/app.config.{ts,js}"
+]
+priority = 75
+
+# Rule: Vue Composables
+[[rules]]
+name = "vue-composables"
+description = "Vue 3 composable pattern"
+priority = 100
+
+[rules.match]
+import_from = "vue"
+export_pattern = "^use\\w+"
+export_type = "function"
+
+[rules.action]
+mark_used = true
+reason = "Vue composable"
+
+# Rule: Vue Components (default export in .vue files)
+[[rules]]
+name = "vue-sfc-default"
+description = "Vue Single File Component default export"
+priority = 90
+
+[rules.match]
+path_ends_with = [".vue"]
+export_name = ["default"]
+
+[rules.action]
+mark_used = true
+reason = "Vue SFC default export"

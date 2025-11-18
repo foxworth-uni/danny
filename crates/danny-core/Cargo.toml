@@ -1,0 +1,21 @@
+[package]
+name = "danny-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# TOML support for config
+toml = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+proptest = "1.4"

@@ -1,0 +1,425 @@
+[framework]
+name = "Next.js"
+description = "Marks Next.js data fetching and metadata exports as framework-used"
+version = "1.0.0"
+priority = 100
+suppresses = ["React"]
+
+# Framework Detection Rules
+[[framework.detection]]
+type = "import"
+pattern = "^next$"
+weight = 1.0
+
+[[framework.detection]]
+type = "import"
+pattern = "^next/"
+weight = 0.9
+
+[[framework.detection]]
+type = "package_dependency"
+pattern = "next"
+weight = 1.0
+
+[[framework.detection]]
+type = "file_path"
+pattern = "**/app/**"
+weight = 0.7
+
+[[framework.detection]]
+type = "file_path"
+pattern = "**/pages/**"
+weight = 0.7
+
+[[framework.detection]]
+type = "file_path"
+pattern = "middleware.{ts,js}"
+weight = 0.8
+
+# Entry Points: File discovery patterns (BEFORE analysis)
+# These glob patterns are used to discover entry point files that seed the dependency graph.
+
+# Next.js App Router: page files
+[[entry_points]]
+name = "app-router-pages"
+description = "Next.js App Router page files"
+patterns = [
+    "**/app/**/page.{ts,tsx,js,jsx}",
+    "**/src/app/**/page.{ts,tsx,js,jsx}"
+]
+priority = 100
+
+# Next.js App Router: layout files
+[[entry_points]]
+name = "app-router-layouts"
+description = "Next.js App Router layout files"
+patterns = [
+    "**/app/**/layout.{ts,tsx,js,jsx}",
+    "**/src/app/**/layout.{ts,tsx,js,jsx}"
+]
+priority = 95
+
+# Next.js App Router: loading files
+[[entry_points]]
+name = "app-router-loading"
+description = "Next.js App Router loading files"
+patterns = [
+    "**/app/**/loading.{ts,tsx,js,jsx}",
+    "**/src/app/**/loading.{ts,tsx,js,jsx}"
+]
+priority = 95
+
+# Next.js App Router: error files
+[[entry_points]]
+name = "app-router-error"
+description = "Next.js App Router error files"
+patterns = [
+    "**/app/**/error.{ts,tsx,js,jsx}",
+    "**/app/**/global-error.{ts,tsx,js,jsx}",
+    "**/src/app/**/error.{ts,tsx,js,jsx}",
+    "**/src/app/**/global-error.{ts,tsx,js,jsx}"
+]
+priority = 95
+
+# Next.js App Router: not-found files
+[[entry_points]]
+name = "app-router-not-found"
+description = "Next.js App Router not-found files"
+patterns = [
+    "**/app/**/not-found.{ts,tsx,js,jsx}",
+    "**/src/app/**/not-found.{ts,tsx,js,jsx}"
+]
+priority = 95
+
+# Next.js App Router: route handlers
+[[entry_points]]
+name = "app-router-route-handlers"
+description = "Next.js App Router route handler files"
+patterns = [
+    "**/app/**/route.{ts,tsx,js,jsx}",
+    "**/src/app/**/route.{ts,tsx,js,jsx}"
+]
+priority = 90
+
+# Next.js Pages Router: page files
+[[entry_points]]
+name = "pages-router-pages"
+description = "Next.js Pages Router page files"
+patterns = [
+    "pages/**/*.{ts,tsx,js,jsx}",
+    "src/pages/**/*.{ts,tsx,js,jsx}"
+]
+priority = 90
+
+# Next.js Middleware
+[[entry_points]]
+name = "nextjs-middleware"
+description = "Next.js middleware files"
+patterns = [
+    "middleware.{ts,js}",
+    "src/middleware.{ts,js}"
+]
+priority = 85
+
+# Next.js Proxy (Next.js 16+)
+[[entry_points]]
+name = "nextjs-proxy"
+description = "Next.js proxy files"
+patterns = [
+    "proxy.{ts,js}",
+    "src/proxy.{ts,js}"
+]
+priority = 85
+
+# Next.js App Router: template files
+[[entry_points]]
+name = "app-router-template"
+description = "Next.js App Router template files"
+patterns = [
+    "**/app/**/template.{ts,tsx,js,jsx}",
+    "**/src/app/**/template.{ts,tsx,js,jsx}"
+]
+priority = 95
+
+# Next.js App Router: default files
+[[entry_points]]
+name = "app-router-default"
+description = "Next.js App Router default files"
+patterns = [
+    "**/app/**/default.{ts,tsx,js,jsx}",
+    "**/src/app/**/default.{ts,tsx,js,jsx}"
+]
+priority = 95
+
+# Next.js Instrumentation
+[[entry_points]]
+name = "nextjs-instrumentation"
+description = "Next.js instrumentation files"
+patterns = [
+    "instrumentation.{ts,js}",
+    "src/instrumentation.{ts,js}"
+]
+priority = 85
+
+# Next.js Configuration Files
+# URL: https://nextjs.org/docs/app/api-reference/config/next-config-js
+# Description: Configuration file for customizing Next.js behavior including build settings,
+# redirects, headers, and various framework options. Loaded directly by Next.js CLI.
+[[entry_points]]
+name = "nextjs-config"
+description = "Next.js configuration files"
+patterns = [
+    "next.config.js",
+    "next.config.mjs",
+    "next.config.ts"
+]
+priority = 100
+
+# Next.js TypeScript Declarations
+# URL: https://nextjs.org/docs/pages/api-reference/config/typescript
+# Description: Auto-generated file that includes Next.js types in TypeScript projects.
+# Should not be edited manually and is loaded by TypeScript compiler.
+[[entry_points]]
+name = "nextjs-type-declarations"
+description = "Next.js TypeScript declaration files"
+patterns = [
+    "next-env.d.ts"
+]
+priority = 95
+
+# Next.js App Router: Metadata Images
+# URL: https://nextjs.org/docs/app/api-reference/file-conventions/metadata/opengraph-image
+# Description: File conventions for setting Open Graph and Twitter card images that appear
+# when links are shared on social networks. Supports static images or dynamic generation.
+[[entry_points]]
+name = "app-router-metadata-images"
+description = "Next.js App Router metadata image files"
+patterns = [
+    "**/app/**/opengraph-image.{ts,tsx,js,jsx}",
+    "**/app/**/twitter-image.{ts,tsx,js,jsx}",
+    "**/src/app/**/opengraph-image.{ts,tsx,js,jsx}",
+    "**/src/app/**/twitter-image.{ts,tsx,js,jsx}"
+]
+priority = 90
+
+# Next.js App Router: Icons
+# URL: https://nextjs.org/docs/app/api-reference/file-conventions/metadata/app-icons
+# Description: File conventions for setting favicons, PWA icons, and Apple touch icons.
+# Automatically generates appropriate meta tags for all icon types.
+[[entry_points]]
+name = "app-router-icons"
+description = "Next.js App Router icon files"
+patterns = [
+    "**/app/**/icon.{ts,tsx,js,jsx}",
+    "**/app/**/apple-icon.{ts,tsx,js,jsx}",
+    "**/src/app/**/icon.{ts,tsx,js,jsx}",
+    "**/src/app/**/apple-icon.{ts,tsx,js,jsx}"
+]
+priority = 90
+
+# Next.js App Router: SEO Files
+# URL (sitemap): https://nextjs.org/docs/app/api-reference/file-conventions/metadata/sitemap
+# URL (robots): https://nextjs.org/docs/app/api-reference/file-conventions/metadata/robots
+# Description: Generate sitemaps and robots.txt to help search engines crawl your site.
+# Can be static files or dynamically generated via TypeScript/JavaScript.
+[[entry_points]]
+name = "app-router-seo"
+description = "Next.js App Router SEO files (sitemap, robots)"
+patterns = [
+    "**/app/**/sitemap.{ts,tsx,js,jsx}",
+    "**/app/**/robots.{ts,tsx,js,jsx}",
+    "**/src/app/**/sitemap.{ts,tsx,js,jsx}",
+    "**/src/app/**/robots.{ts,tsx,js,jsx}"
+]
+priority = 90
+
+# Next.js App Router: Manifest Files
+# URL: https://nextjs.org/docs/app/api-reference/file-conventions/metadata/manifest
+# Description: Provides metadata for Progressive Web Apps including app name, icons, colors,
+# and display mode. Supports manifest.json/webmanifest or dynamic generation.
+[[entry_points]]
+name = "app-router-manifest"
+description = "Next.js App Router web app manifest files"
+patterns = [
+    "**/app/**/manifest.{ts,js}",
+    "**/src/app/**/manifest.{ts,js}"
+]
+priority = 90
+
+# Next.js Pages Router: Custom Error Pages
+# URL: https://nextjs.org/docs/pages/building-your-application/routing/custom-error
+# Description: Static custom error pages for 404 (not found) and 500 (server error) responses.
+# Generated at build time for optimal performance.
+[[entry_points]]
+name = "pages-router-error-pages"
+description = "Next.js Pages Router custom error pages"
+patterns = [
+    "pages/404.{ts,tsx,js,jsx}",
+    "pages/500.{ts,tsx,js,jsx}",
+    "src/pages/404.{ts,tsx,js,jsx}",
+    "src/pages/500.{ts,tsx,js,jsx}"
+]
+priority = 85
+
+# Next.js Pages Router: Special Files
+# URL (_app): https://nextjs.org/docs/pages/building-your-application/routing/custom-app
+# URL (_document): https://nextjs.org/docs/pages/building-your-application/routing/custom-document
+# URL (_error): https://nextjs.org/docs/pages/building-your-application/routing/custom-error
+# Description: Special files for customizing App component, HTML document structure,
+# and error handling. Loaded directly by Next.js framework.
+[[entry_points]]
+name = "pages-router-special-files"
+description = "Next.js Pages Router special files (_app, _document, _error)"
+patterns = [
+    "pages/_app.{ts,tsx,js,jsx}",
+    "pages/_document.{ts,tsx,js,jsx}",
+    "pages/_error.{ts,tsx,js,jsx}",
+    "src/pages/_app.{ts,tsx,js,jsx}",
+    "src/pages/_document.{ts,tsx,js,jsx}",
+    "src/pages/_error.{ts,tsx,js,jsx}"
+]
+priority = 85
+
+# Rule: Next.js Data Fetching & Config Exports
+[[rules]]
+name = "nextjs-exports"
+description = "Next.js framework exports in pages/ and app/ directories"
+priority = 100
+
+[rules.match]
+path_starts_with = ["pages/", "app/", "src/pages/", "src/app/"]
+export_name = [
+    "getStaticProps",
+    "getStaticPaths",
+    "getServerSideProps",
+    "generateMetadata",
+    "generateStaticParams",
+    "generateViewport",
+    "metadata",
+    "viewport",
+    "config",
+    "dynamic",
+    "dynamicParams",
+    "revalidate",
+    "fetchCache",
+    "runtime",
+    "preferredRegion"
+]
+
+[rules.action]
+mark_used = true
+reason = "Next.js framework export"
+
+# Rule: Next.js Route Handlers (Pages Router API Routes)
+[[rules]]
+name = "nextjs-api-routes"
+description = "Next.js Pages Router API route handlers"
+priority = 90
+
+[rules.match]
+path_pattern = "/(pages|src/pages)/api/.*\\.(ts|js)x?$"
+export_name = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "default"]
+
+[rules.action]
+mark_used = true
+reason = "Next.js API route handler"
+
+# Rule: Next.js App Router Route Handlers
+[[rules]]
+name = "nextjs-route-handlers"
+description = "Next.js App Router route handlers (route.ts/js anywhere in app/)"
+priority = 90
+
+[rules.match]
+path_pattern = "/(app|src/app)/.*/route\\.(ts|js)x?$"
+export_name = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
+
+[rules.action]
+mark_used = true
+reason = "Next.js route handler"
+
+# Rule: Next.js Middleware & Proxy (Next.js 16)
+[[rules]]
+name = "nextjs-middleware"
+description = "Next.js middleware and proxy functions"
+priority = 90
+
+[rules.match]
+path_ends_with = ["middleware.ts", "middleware.js", "proxy.ts", "proxy.js"]
+export_name = ["middleware", "config", "default"]
+
+[rules.action]
+mark_used = true
+reason = "Next.js middleware/proxy"
+
+# Rule: Next.js App Router Special Files
+[[rules]]
+name = "nextjs-app-router-files"
+description = "Next.js App Router special files (layout, loading, error, etc.)"
+priority = 95
+
+[rules.match]
+path_pattern = "/(app|src/app)/.*(layout|template|loading|error|not-found|default|global-error)\\.(tsx?|jsx?)$"
+export_name = ["default"]
+
+[rules.action]
+mark_used = true
+reason = "Next.js App Router special file"
+
+# Rule: Next.js Special Pages (_app, _document, _error)
+[[rules]]
+name = "nextjs-special-pages"
+description = "Next.js Pages Router special files"
+priority = 95
+
+[rules.match]
+path_pattern = "/(pages|src/pages)/(_app|_document|_error)\\.(tsx?|jsx?)$"
+export_name = ["default"]
+
+[rules.action]
+mark_used = true
+reason = "Next.js special page"
+
+# Rule: Next.js Page Default Exports
+[[rules]]
+name = "nextjs-page-components"
+description = "Default exports in Next.js page files"
+priority = 85
+
+[rules.match]
+path_pattern = "/(pages|app|src/pages|src/app)/.*\\.(tsx?|jsx?)$"
+not_path_pattern = ".*(layout|loading|error|not-found|default|global-error|_app|_document|_error|route)\\.(tsx?|jsx?)$"
+export_name = ["default"]
+
+[rules.action]
+mark_used = true
+reason = "Next.js page component"
+
+# Rule: Next.js Metadata Files
+[[rules]]
+name = "nextjs-metadata-files"
+description = "Next.js metadata generation files (OG images, icons, sitemap, robots)"
+priority = 90
+
+[rules.match]
+path_pattern = ".*(opengraph-image|twitter-image|icon|apple-icon|sitemap|robots)\\.(tsx?|jsx?)$"
+export_name = ["default", "size", "contentType", "alt", "runtime"]
+
+[rules.action]
+mark_used = true
+reason = "Next.js metadata file"
+
+# Rule: Unused Next.js API routes (detect unused route handlers)
+[[rules]]
+name = "nextjs-unused-routes"
+description = "Detect unused Next.js API route handlers"
+priority = 70
+
+[rules.match]
+path_pattern = "/(pages|app)/api/.*\\.(ts|js)x?$"
+export_name = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
+max_usage_count = 0
+
+[rules.action]
+mark_used = true
+reason = "Unused Next.js route handler (can be removed)"

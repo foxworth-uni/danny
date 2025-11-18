@@ -1,0 +1,141 @@
+[framework]
+name = "Svelte"
+description = "Marks Svelte stores as framework-used"
+version = "1.0.0"
+priority = 50
+
+# Framework Detection Rules
+[[framework.detection]]
+type = "import"
+pattern = "^svelte$"
+weight = 1.0
+
+[[framework.detection]]
+type = "import"
+pattern = "^svelte/"
+weight = 0.9
+
+[[framework.detection]]
+type = "package_dependency"
+pattern = "svelte"
+weight = 1.0
+
+[[framework.detection]]
+type = "file_extension"
+pattern = ".svelte"
+weight = 0.8
+
+[[framework.detection]]
+type = "file_path"
+pattern = "**/+page.{svelte,ts,js}"
+weight = 0.7
+
+[[framework.detection]]
+type = "file_path"
+pattern = "**/+layout.{svelte,ts,js}"
+weight = 0.7
+
+# Entry Points: File discovery patterns (BEFORE analysis)
+# These glob patterns are used to discover entry point files that seed the dependency graph.
+
+# SvelteKit: Pages
+[[entry_points]]
+name = "sveltekit-pages"
+description = "SvelteKit page files"
+patterns = [
+    "src/routes/**/+page.{svelte,ts,js}",
+    "src/routes/**/+page.server.{ts,js}",
+    "src/routes/**/+page.client.{ts,js}"
+]
+priority = 100
+
+# SvelteKit: Layouts
+[[entry_points]]
+name = "sveltekit-layouts"
+description = "SvelteKit layout files"
+patterns = [
+    "src/routes/**/+layout.{svelte,ts,js}",
+    "src/routes/**/+layout.server.{ts,js}"
+]
+priority = 95
+
+# SvelteKit: Server Routes
+[[entry_points]]
+name = "sveltekit-server-routes"
+description = "SvelteKit server route files"
+patterns = [
+    "src/routes/**/+server.{ts,js}"
+]
+priority = 90
+
+# SvelteKit: Error Pages
+[[entry_points]]
+name = "sveltekit-error-pages"
+description = "SvelteKit error page files"
+patterns = [
+    "src/routes/**/+error.{svelte,ts,js}"
+]
+priority = 90
+
+# SvelteKit: Hooks
+[[entry_points]]
+name = "sveltekit-hooks"
+description = "SvelteKit hooks files"
+patterns = [
+    "src/hooks.{ts,js}",
+    "src/hooks.server.{ts,js}",
+    "src/hooks.client.{ts,js}"
+]
+priority = 85
+
+# SvelteKit: App Files
+[[entry_points]]
+name = "sveltekit-app-files"
+description = "SvelteKit app files"
+patterns = [
+    "src/app.html",
+    "src/app.d.ts"
+]
+priority = 80
+
+# Rule 1: Svelte Stores (suffix pattern)
+[[rules]]
+name = "svelte-stores-suffix"
+description = "Svelte stores ending with 'Store'"
+priority = 100
+
+[rules.match]
+import_from = "svelte/store"
+export_pattern = "\\w+Store$"
+
+[rules.action]
+mark_used = true
+reason = "Svelte store (suffix pattern)"
+
+# Rule 2: Svelte Reactive Stores ($ prefix)
+[[rules]]
+name = "svelte-stores-dollar"
+description = "Svelte reactive store pattern"
+priority = 100
+
+[rules.match]
+path_ends_with = [".svelte"]
+export_pattern = "^\\$\\w+"
+
+[rules.action]
+mark_used = true
+reason = "Svelte reactive store"
+
+# Rule 3: Svelte Component Default Exports
+[[rules]]
+name = "svelte-component-default"
+description = "Svelte component default export"
+priority = 90
+
+[rules.match]
+path_ends_with = [".svelte"]
+export_name = ["default"]
+
+[rules.action]
+mark_used = true
+reason = "Svelte component"

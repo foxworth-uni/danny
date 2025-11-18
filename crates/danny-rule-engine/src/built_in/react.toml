@@ -1,0 +1,115 @@
+[framework]
+name = "React"
+description = "Marks React hooks and components as framework-used"
+version = "1.0.0"
+priority = 50
+
+# Framework Detection Rules
+[[framework.detection]]
+type = "import"
+pattern = "^react$"
+weight = 1.0
+
+[[framework.detection]]
+type = "import"
+pattern = "^react-dom$"
+weight = 0.8
+
+[[framework.detection]]
+type = "package_dependency"
+pattern = "react"
+weight = 1.0
+
+# Rule 1: React Hooks (useState, useEffect, etc.)
+[[rules]]
+name = "react-hooks"
+description = "React hook pattern: use + PascalCase"
+priority = 100
+
+[rules.match]
+import_from = "react"
+export_pattern = "^use[A-Z]\\w+"
+export_type = "function"
+
+[rules.action]
+mark_used = true
+reason = "React hook pattern"
+
+# Rule 2: React Components (PascalCase exports)
+[[rules]]
+name = "react-components"
+description = "React component pattern: PascalCase in .jsx/.tsx files"
+priority = 90
+
+[rules.match]
+import_from = "react"
+export_pattern = "^[A-Z]\\w+"
+path_ends_with = [".jsx", ".tsx"]
+
+[rules.action]
+mark_used = true
+reason = "React component"
+
+# Rule 3: React.FC type-annotated components
+[[rules]]
+name = "react-fc-components"
+description = "Components using React.FC type"
+priority = 80
+
+[rules.match]
+path_ends_with = [".tsx"]
+export_pattern = "^[A-Z]\\w+"
+export_type = "const"
+
+[rules.action]
+mark_used = true
+reason = "React component (FC type)"
+
+# Rule 4: Unused utility hooks (detect unused custom hooks)
+[[rules]]
+name = "react-unused-hooks"
+description = "Detect unused custom React hooks"
+priority = 70
+
+[rules.match]
+import_from = "react"
+export_pattern = "^use[A-Z]\\w+"
+export_type = "function"
+max_usage_count = 0
+
+[rules.action]
+mark_used = true
+reason = "Unused React hook (can be removed)"
+
+# Rule 5: Rarely-used hooks (used 1-2 times)
+[[rules]]
+name = "react-rarely-used-hooks"
+description = "Detect rarely-used React hooks"
+priority = 60
+
+[rules.match]
+import_from = "react"
+export_pattern = "^use[A-Z]\\w+"
+export_type = "function"
+min_usage_count = 1
+max_usage_count = 2
+
+[rules.action]
+mark_used = true
+reason = "Rarely-used React hook (consider consolidating)"
+
+# Rule 6: Popular hooks (used 10+ times - framework-used)
+[[rules]]
+name = "react-popular-hooks"
+description = "Mark popular React hooks as framework-used"
+priority = 50
+
+[rules.match]
+import_from = "react"
+export_pattern = "^use[A-Z]\\w+"
+export_type = "function"
+min_usage_count = 10
+
+[rules.action]
+mark_used = true
+reason = "Popular React hook (framework-used)"

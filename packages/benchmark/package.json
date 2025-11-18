@@ -1,0 +1,29 @@
+{
+  "name": "@danny/benchmark",
+  "version": "0.1.0",
+  "description": "Benchmark suite comparing Danny with Knip and other dead code detection tools",
+  "type": "module",
+  "scripts": {
+    "benchmark": "node src/index.js",
+    "benchmark:danny": "node src/runners/danny.js",
+    "benchmark:knip": "node src/runners/knip.js",
+    "benchmark:all": "node src/index.js --all",
+    "benchmark:compare": "node src/compare.js",
+    "compare:findings": "node src/findings-compare.js",
+    "report": "node src/report.js"
+  },
+  "dependencies": {
+    "knip": "^5.36.3",
+    "chalk": "^5.3.0",
+    "ora": "^9.0.0",
+    "table": "^6.8.2",
+    "yargs": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+

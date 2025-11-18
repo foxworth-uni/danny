@@ -1,0 +1,31 @@
+[package]
+name = "danny-config"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["native-fs"]
+native-fs = ["danny-fs/native", "dirs"]
+wasm = ["danny-fs/wasm"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+thiserror = "2.0"
+chrono = { version = "0.4", features = ["serde"] }
+
+# Danny core types
+danny-core = { path = "../danny-core" }
+
+# Danny filesystem abstraction
+danny-fs = { workspace = true }
+
+# Path handling (optional, only for native-fs)
+dirs = { version = "5.0", optional = true }
+
+# Async
+async-trait = "0.1"
+tokio = { version = "1.40", features = ["rt", "rt-multi-thread", "fs"] }
+
+[dev-dependencies]
+tempfile = "3.10"

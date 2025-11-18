@@ -1,0 +1,20 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "pages/**/*.{js,jsx,ts,tsx}",
+    "pages/_app.jsx",
+    "pages/_document.jsx"
+  ],
+  "project": [
+    "**/*.{js,jsx,ts,tsx}"
+  ],
+  "ignore": [
+    "node_modules/**",
+    ".next/**",
+    "out/**",
+    "public/**"
+  ],
+  "ignoreDependencies": [],
+  "ignoreExportsUsedInFile": true
+}
+

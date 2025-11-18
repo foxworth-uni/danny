@@ -1,0 +1,3 @@
+# Test gitignore file
+utils/validators.js
+*.pem

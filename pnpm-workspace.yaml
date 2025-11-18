@@ -1,0 +1,3 @@
+packages:
+  - 'packages/*'
+  - 'test-files/nextjs-app'

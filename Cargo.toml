@@ -1,0 +1,96 @@
+[workspace]
+members = [
+    "crates/danny-cli",
+    "crates/danny-core",
+    "crates/danny-backend-js",
+    "crates/danny-rule-engine",
+    "crates/danny-config",
+    "crates/danny-fs",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.83"
+authors = ["Fox <fox@nine.blue>"]
+license = "MIT"
+repository = "https://github.com/nine-labs/danny"
+homepage = "https://github.com/nine-labs/danny"
+
+[workspace.dependencies]
+# Internal crates
+danny-core = { path = "crates/danny-core" }
+danny-backend-js = { path = "crates/danny-backend-js" }
+danny-rule-engine = { path = "crates/danny-rule-engine" }
+danny-config = { path = "crates/danny-config" }
+danny-fs = { path = "crates/danny-fs" }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0"
+miette = { version = "7.4", features = ["fancy"] }
+
+# CLI
+clap = { version = "4.5", features = ["derive"] }
+
+# Oxc ecosystem (JavaScript/TypeScript parsing)
+oxc_allocator = "0.95"
+oxc_parser = "0.95"
+oxc_ast = "0.95"
+oxc_semantic = "0.95"
+oxc_span = "0.95"
+# Note: oxc_resolver is a separate package with different versioning
+oxc_resolver = "11"
+
+# Python parsing (from Ruff git repo)
+ruff_python_ast = { git = "https://github.com/astral-sh/ruff", tag = "0.14.1" }
+ruff_python_parser = { git = "https://github.com/astral-sh/ruff", tag = "0.14.1" }
+ruff_text_size = { git = "https://github.com/astral-sh/ruff", tag = "0.14.1" }
+
+# Testing
+tempfile = "3.17"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+toml = "0.8"
+
+# File system
+walkdir = "2.5"
+glob = "0.3"
+ignore = "0.4"
+
+# Pattern matching
+regex = "1.10"
+globset = "0.4"
+
+# Fob integration (JavaScript analysis)
+fob = { path = "../fob/crates/fob" }
+
+# NAPI (Node.js bindings)
+napi = "3.4.0"
+napi-derive = "3.3.0"
+
+# Async runtime
+tokio = { version = "1.42", features = ["macros", "rt-multi-thread", "sync"] }
+async-trait = "0.1"
+futures = "0.3"
+tokio-stream = "0.1"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+# Desktop UI (Dioxus)
+dioxus = { version = "0.7.1", features = ["router"] }
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# System directories
+dirs = "5.0"
+
+# WASM support
+parking_lot = "0.12"

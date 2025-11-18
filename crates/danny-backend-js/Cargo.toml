@@ -1,0 +1,50 @@
+[package]
+name = "danny-backend-js"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+default = ["native-fs"]
+native-fs = ["danny-fs/native"]
+wasm = ["danny-fs/wasm"]
+property-tests = []
+
+[dependencies]
+# Danny core
+danny-core = { workspace = true }
+
+# Danny rule engine (TOML-based framework rules)
+danny-rule-engine = { workspace = true }
+
+# Danny filesystem abstraction
+danny-fs = { workspace = true }
+
+# Fob integration
+fob = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Pattern matching
+globset = { workspace = true }
+regex = { workspace = true }
+
+# Async trait support
+async-trait = "0.1"
+
+# Async runtime
+tokio = { version = "1.40", features = ["rt", "rt-multi-thread"] }
+
+# Hash map (for compatibility with Fob's FxHashMap)
+rustc-hash = "1.1"
+
+[dev-dependencies]
+tempfile = { workspace = true }
+proptest = "1.4"

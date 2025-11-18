@@ -1,0 +1,138 @@
+{
+  "description": "Ground truth for dead code detection in nextjs-app test case",
+  "version": "1.0.0",
+  "unused": {
+    "components": [
+      {
+        "file": "components/Footer.jsx",
+        "exports": ["Footer"],
+        "reason": "Never imported or used anywhere"
+      },
+      {
+        "file": "components/Card.jsx",
+        "exports": ["Card"],
+        "reason": "Never imported or used anywhere"
+      },
+      {
+        "file": "components/Sidebar.jsx",
+        "exports": ["Sidebar"],
+        "reason": "Never imported or used anywhere"
+      },
+      {
+        "file": "components/UnusedModal.tsx",
+        "exports": ["UnusedModal"],
+        "reason": "Never imported or used anywhere"
+      }
+    ],
+    "functions": [
+      {
+        "file": "lib/utils.js",
+        "name": "unusedHelper",
+        "reason": "Exported but never imported"
+      },
+      {
+        "file": "lib/api.ts",
+        "name": "deprecatedFetch",
+        "reason": "Exported but never used"
+      }
+    ],
+    "variables": [
+      {
+        "file": "pages/demo.tsx",
+        "name": "UNUSED_CONSTANT",
+        "reason": "Defined but never used"
+      }
+    ]
+  },
+  "used": {
+    "components": [
+      {
+        "file": "components/Header.jsx",
+        "exports": ["Header"],
+        "usedIn": ["pages/_app.jsx"]
+      },
+      {
+        "file": "components/Button.tsx",
+        "exports": ["Button"],
+        "usedIn": ["pages/index.jsx", "pages/about.jsx", "pages/contact.jsx"]
+      }
+    ],
+    "functions": [
+      {
+        "file": "lib/utils.js",
+        "name": "formatDate",
+        "usedIn": ["pages/index.jsx"]
+      },
+      {
+        "file": "lib/api.ts",
+        "name": "fetchData",
+        "usedIn": ["pages/demo.tsx"]
+      }
+    ]
+  },
+  "expectedFindings": {
+    "totalUnusedExports": 6,
+    "totalUnusedFiles": 4,
+    "unusedComponents": 4,
+    "unusedFunctions": 2,
+    "unusedVariables": 1
+  },
+  "notes": [
+    "This is a realistic Next.js app with intentional dead code",
+    "All unused code is truly unused - the app runs perfectly without it",
+    "Used components are actually rendered in the pages",
+    "Some dependencies in package.json may also be unused"
+  ],
+  "frameworkFiles": {
+    "appRouter": [
+      {
+        "file": "app/layout.tsx",
+        "exports": ["default", "metadata"],
+        "reason": "Next.js App Router root layout (framework-required)"
+      },
+      {
+        "file": "app/page.tsx",
+        "exports": ["default"],
+        "reason": "Next.js App Router root page (framework-required)"
+      },
+      {
+        "file": "app/loading.tsx",
+        "exports": ["default"],
+        "reason": "Next.js App Router loading state (framework file)"
+      },
+      {
+        "file": "app/error.tsx",
+        "exports": ["default"],
+        "reason": "Next.js App Router error boundary (framework file)"
+      },
+      {
+        "file": "app/dashboard/layout.tsx",
+        "exports": ["default"],
+        "reason": "Next.js App Router nested layout (framework file)"
+      },
+      {
+        "file": "app/dashboard/@analytics/default.tsx",
+        "exports": ["default"],
+        "reason": "Next.js App Router parallel route default (framework file)"
+      },
+      {
+        "file": "app/blog/[slug]/route.ts",
+        "exports": ["GET", "POST"],
+        "reason": "Next.js App Router route handler outside /api/ (framework file)"
+      },
+      {
+        "file": "app/opengraph-image.tsx",
+        "exports": ["default", "alt", "size", "contentType", "runtime"],
+        "reason": "Next.js metadata file for OG image generation (framework file)"
+      }
+    ],
+    "nextjs16": [
+      {
+        "file": "proxy.ts",
+        "exports": ["default", "config"],
+        "reason": "Next.js 16 proxy file (replaces middleware.ts)"
+      }
+    ]
+  }
+}
+

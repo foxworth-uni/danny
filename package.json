@@ -1,0 +1,23 @@
+{
+  "name": "danny-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Danny - Blazing-fast dead code detector monorepo",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "build:rust": "cargo build --workspace --release",
+    "test:rust": "cargo test --workspace",
+    "lint:rust": "cargo clippy --workspace --all-targets --all-features",
+    "format:rust": "cargo fmt --all --check",
+    "clean": "cargo clean && pnpm -r exec rm -rf dist node_modules"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@10.22.0"
+}
