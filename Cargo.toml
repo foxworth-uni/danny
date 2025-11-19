@@ -67,7 +67,7 @@ regex = "1.10"
 globset = "0.4"
 
 # Fob integration (JavaScript analysis)
-fob = { path = "../fob/crates/fob" }
+fob = { git = "https://github.com/foxworth-uni/fob", branch = "main" }
 
 # NAPI (Node.js bindings)
 napi = "3.4.0"
