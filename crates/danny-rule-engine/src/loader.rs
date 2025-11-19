@@ -126,21 +126,27 @@ impl<F: FileSystem> RuleLoader<F> {
                 })?;
 
         // Discover .toml files in the directory
+        // Note: We set a very large max_file_size here to discover all files,
+        // then the loader validates size explicitly and returns proper errors
+        // This ensures oversized files trigger errors instead of being silently filtered
         let discovery_options = FsDiscoveryOptions {
-            max_file_size: Some(MAX_TOML_FILE_SIZE),
+            max_file_size: Some(100 * MAX_TOML_FILE_SIZE), // Very large limit - loader validates actual size
             follow_symlinks: false, // Security: don't follow symlinks
             max_depth: MAX_DIRECTORY_DEPTH,
-            include_hidden: false,
+            // .danny lives under a hidden directory, so we must include hidden files when scanning.
+            // We still validate paths below, so this does not reduce security.
+            include_hidden: true,
             respect_gitignore: false, // Don't ignore .toml files
         };
 
-        // Use "toml" extension (without dot) for discovery
+        // Use ".toml" extension (loader's filesystem helper expects the dot-prefixed extension)
+        // Use original dir path for discovery - normalization happens per-file for security checks
         let discovered_files = self
             .fs
-            .discover_files(&normalized_dir, &["toml"], &[], &discovery_options)
+            .discover_files(dir, &[".toml"], &[], &discovery_options)
             .await
             .map_err(|e| RuleError::LoadError {
-                path: normalized_dir.display().to_string(),
+                path: dir.display().to_string(),
                 source: Box::new(e),
             })?;
 

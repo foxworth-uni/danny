@@ -21,15 +21,18 @@
 //!
 //! ```rust,no_run
 //! use danny_deps::{CargoDependencyManager, DependencyManager};
+//! use danny_fs::NativeFileSystem;
 //! use std::path::Path;
+//! use std::sync::Arc;
 //!
 //! # async fn example() -> anyhow::Result<()> {
 //! let manager = CargoDependencyManager::new();
-//! let manifest = manager.parse(Path::new("Cargo.toml"))?;
+//! let fs = Arc::new(NativeFileSystem::new(Path::new("."))?);
+//! let manifest = manager.parse(&fs, Path::new("Cargo.toml")).await?;
 //!
 //! // Check what dependencies are present
-//! for dep in manifest.dependencies() {
-//!     println!("{}: {}", dep.name, dep.version_req);
+//! for dep in manifest.all_dependencies() {
+//!     println!("{}: {:?}", dep.name, dep.version_req);
 //! }
 //! # Ok(())
 //! # }
