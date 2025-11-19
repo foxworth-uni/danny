@@ -15,8 +15,8 @@ edition = "2021"
 rust-version = "1.83"
 authors = ["Fox <fox@nine.blue>"]
 license = "MIT"
-repository = "https://github.com/nine-labs/danny"
-homepage = "https://github.com/nine-labs/danny"
+repository = "https://github.com/foxworth-uni/danny"
+homepage = "https://github.com/foxworth-uni/danny"
 
 [workspace.dependencies]
 # Internal crates
@@ -94,3 +94,8 @@ dirs = "5.0"
 
 # WASM support
 parking_lot = "0.12"
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
