@@ -239,32 +239,47 @@ import type { Type } from './types';
         .filter(|f| matches!(f, Finding::TypeOnlyImport { .. }))
         .collect();
 
-    // Note: FOB's import pattern detection may require modules to be resolved/analyzed.
-    // This test verifies the feature is enabled, but actual detection depends on FOB's
-    // ability to parse and categorize imports, which may vary based on module resolution.
-    // If no patterns are found, it could indicate:
-    // 1. FOB requires modules to be resolved before detecting patterns
-    // 2. Import syntax needs to match specific patterns FOB recognizes
-    // 3. Modules need to be included in the analysis graph
+    // With the fob fix, we should now detect all three import patterns
+    println!("=== Import Pattern Detection Results ===");
+    println!("Total findings: {}", result.findings.len());
+    println!("Side-effect imports: {}", side_effects.len());
+    println!("Namespace imports: {}", namespaces.len());
+    println!("Type-only imports: {}", type_only.len());
     
-    // For now, we verify the feature doesn't crash and that findings are returned
-    // The actual pattern detection is tested through integration with real projects
-    assert!(
-        !result.findings.is_empty(),
-        "Analysis should return findings. Got {} findings",
-        result.findings.len()
+    // Debug: print all findings
+    for finding in &result.findings {
+        match finding {
+            Finding::SideEffectOnlyImport { source, .. } => {
+                println!("  ✓ Side-effect: {}", source);
+            }
+            Finding::NamespaceImport { namespace_name, source, .. } => {
+                println!("  ✓ Namespace: {} from {}", namespace_name, source);
+            }
+            Finding::TypeOnlyImport { source, specifiers, .. } => {
+                println!("  ✓ Type-only: {:?} from {}", specifiers, source);
+            }
+            _ => {}
+        }
+    }
+    
+    // Now assert that we found the expected patterns
+    assert_eq!(
+        side_effects.len(),
+        1,
+        "Should find 1 side-effect import (import 'side-effect-module')"
     );
     
-    // If import patterns are detected, verify they're in the expected format
-    if !side_effects.is_empty() {
-        assert!(side_effects.iter().all(|f| matches!(f, Finding::SideEffectOnlyImport { .. })));
-    }
-    if !namespaces.is_empty() {
-        assert!(namespaces.iter().all(|f| matches!(f, Finding::NamespaceImport { .. })));
-    }
-    if !type_only.is_empty() {
-        assert!(type_only.iter().all(|f| matches!(f, Finding::TypeOnlyImport { .. })));
-    }
+    assert_eq!(
+        namespaces.len(),
+        1,
+        "Should find 1 namespace import (import * as utils)"
+    );
+    
+    assert_eq!(
+        type_only.len(),
+        1,
+        "Should find 1 type-only import (import type {{ Type }})"
+    );
 }
 
 #[test]
