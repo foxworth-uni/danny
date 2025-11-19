@@ -37,14 +37,14 @@ globset = { workspace = true }
 regex = { workspace = true }
 
 # Async trait support
-async-trait = "0.1"
+async-trait.workspace = true
 
 # Async runtime
-tokio = { version = "1.40", features = ["rt", "rt-multi-thread"] }
+tokio.workspace = true
 
 # Hash map (for compatibility with Fob's FxHashMap)
 rustc-hash = "1.1"
 
 [dev-dependencies]
 tempfile = { workspace = true }
-proptest = "1.4"
+proptest.workspace = true

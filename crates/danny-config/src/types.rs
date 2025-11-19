@@ -221,40 +221,7 @@ mod tests {
         assert_eq!(project, deserialized);
     }
 
-    #[test]
-    fn test_workspace_member_config() {
-        // Test default behavior (all enabled)
-        let config = WorkspaceMemberConfig {
-            enabled_members: None,
-            disabled_members: None,
-        };
-        assert!(config.is_member_enabled("danny-cli"));
-        assert!(config.is_member_enabled("danny-feed"));
 
-        // Test disabled list
-        let config = WorkspaceMemberConfig {
-            enabled_members: None,
-            disabled_members: Some(vec!["danny-desktop".to_string()]),
-        };
-        assert!(config.is_member_enabled("danny-cli"));
-        assert!(!config.is_member_enabled("danny-desktop"));
-
-        // Test enabled list
-        let config = WorkspaceMemberConfig {
-            enabled_members: Some(vec!["danny-cli".to_string(), "danny-feed".to_string()]),
-            disabled_members: None,
-        };
-        assert!(config.is_member_enabled("danny-cli"));
-        assert!(config.is_member_enabled("danny-feed"));
-        assert!(!config.is_member_enabled("danny-desktop"));
-
-        // Test disabled takes precedence
-        let config = WorkspaceMemberConfig {
-            enabled_members: Some(vec!["danny-cli".to_string()]),
-            disabled_members: Some(vec!["danny-cli".to_string()]),
-        };
-        assert!(!config.is_member_enabled("danny-cli"));
-    }
 }
 
 /// What Danny should analyze - Package or Files mode

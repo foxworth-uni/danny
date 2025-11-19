@@ -22,7 +22,7 @@ async-trait = { workspace = true }
 ignore = { workspace = true, optional = true }
 
 # WASM-only dependencies
-parking_lot = { version = "0.12", optional = true }
+parking_lot = { workspace = true, optional = true }
 
 # Platform-specific tokio configuration
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -33,5 +33,5 @@ tokio = { version = "1.42", features = ["sync", "macros", "io-util"] }
 
 [dev-dependencies]
 tempfile = { workspace = true }
-proptest = "1.4"
+proptest.workspace = true
 

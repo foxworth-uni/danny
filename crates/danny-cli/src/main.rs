@@ -92,15 +92,11 @@ struct Cli {
 
 #[derive(clap::Subcommand, Debug)]
 enum Command {
-    /// Manage danny configuration for feed generation
+    /// Manage danny configuration
     Config {
         #[command(subcommand)]
         command: commands::ConfigCommand,
     },
-
-    /// Generate package update feeds for projects
-    #[command(visible_alias = "f")]
-    Feed(commands::FeedCommand),
 }
 
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
@@ -117,9 +113,6 @@ fn main() -> Result<()> {
     match cli.command {
         Some(Command::Config { command }) => {
             commands::handle_config_command(command)
-        }
-        Some(Command::Feed(feed_cmd)) => {
-            commands::handle_feed_command(feed_cmd)
         }
         None => {
             // Parse category strings to Category enums

@@ -6,6 +6,8 @@ members = [
     "crates/danny-rule-engine",
     "crates/danny-config",
     "crates/danny-fs",
+    "crates/danny-deps",
+    "crates/danny-info",
 ]
 resolver = "2"
 
@@ -25,6 +27,8 @@ danny-backend-js = { path = "crates/danny-backend-js" }
 danny-rule-engine = { path = "crates/danny-rule-engine" }
 danny-config = { path = "crates/danny-config" }
 danny-fs = { path = "crates/danny-fs" }
+danny-deps = { path = "crates/danny-deps" }
+danny-info = { path = "crates/danny-info" }
 
 # Error handling
 anyhow = "1.0"
@@ -67,7 +71,7 @@ regex = "1.10"
 globset = "0.4"
 
 # Fob integration (JavaScript analysis)
-fob = { git = "https://github.com/foxworth-uni/fob", branch = "main" }
+fob = { git = "https://github.com/foxworth-uni/fob", branch = "main", package = "fob" }
 
 # NAPI (Node.js bindings)
 napi = "3.4.0"
@@ -94,6 +98,33 @@ dirs = "5.0"
 
 # WASM support
 parking_lot = "0.12"
+
+# HTTP client (for danny-info)
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+
+# URL parsing (for danny-info)
+url = "2.5"
+
+# Rate limiting (for danny-info)
+governor = "0.8"
+
+# Version handling (for danny-deps)
+semver = "1.0"
+node-semver = "2.2"
+
+# TOML parsing (for danny-deps)
+toml_edit = "0.22"
+
+# Lockfile parsing (for danny-deps)
+cargo-lock = "9.0"
+
+# Cryptographic checksums (for danny-deps)
+sha2 = "0.10"
+hex = "0.4"
+base64 = "0.22"
+
+# Property testing (for danny-deps)
+proptest = "1.4"
 
 # The profile that 'dist' will build with
 [profile.dist]

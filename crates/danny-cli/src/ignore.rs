@@ -176,7 +176,7 @@ fn parse_gitignore_file(path: &Path) -> Result<Vec<String>> {
 
     builder.add(path);
 
-    let gitignore = builder.build()?;
+    let _gitignore = builder.build()?;
 
     // Extract patterns from the gitignore object
     // Note: The ignore crate doesn't expose patterns directly, so we'll

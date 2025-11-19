@@ -13,16 +13,15 @@ path = "src/main.rs"
 
 [dependencies]
 # Core library
-danny-core = { path = "../danny-core" }
-danny-backend-js = { path = "../danny-backend-js" }
+danny-core.workspace = true
+danny-backend-js.workspace = true
 danny-config.workspace = true
-danny-rule-engine = { path = "../danny-rule-engine" }
-danny-feed = { path = "../../../danny-desktop/crates/danny-feed" }
-danny-deps = { path = "../../../danny-desktop/crates/danny-deps" }
+danny-rule-engine.workspace = true
+danny-deps = { workspace = true }
 danny-fs = { workspace = true }
 
 # CLI
-clap = { version = "4.5.0", features = ["derive"] }
+clap.workspace = true
 
 # Error handling
 anyhow.workspace = true
@@ -45,10 +44,10 @@ globset.workspace = true
 ignore.workspace = true
 
 # Temporary directories (for tests)
-tempfile = "3.8"
+tempfile.workspace = true
 
 # Pretty error reporting
-miette = { version = "7.2.0", features = ["fancy"] }
+miette.workspace = true
 
 # Colored terminal output
 colored = "3.0.0"

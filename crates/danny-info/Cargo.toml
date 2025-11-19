@@ -1,0 +1,38 @@
+[package]
+name = "danny-info"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Package metadata fetcher for npm, crates.io, JSR, and GitHub"
+
+[dependencies]
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Async + HTTP
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "time"] }
+reqwest.workspace = true
+async-trait.workspace = true
+
+# Rate limiting
+governor.workspace = true
+
+# Serialization
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+
+# URL parsing
+url.workspace = true
+
+# Regex for changelog parsing
+regex.workspace = true
+
+# Logging
+tracing.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util"] }

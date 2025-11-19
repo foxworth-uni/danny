@@ -1,0 +1,57 @@
+[package]
+name = "danny-deps"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT OR Apache-2.0"
+description = "Local dependency file parsing and management for danny"
+repository.workspace = true
+
+[dependencies]
+# Reuse danny-info for remote package data fetching
+danny-info = { path = "../danny-info" }
+
+# Version handling
+semver.workspace = true
+node-semver.workspace = true
+
+# TOML parsing with comment/format preservation
+toml_edit.workspace = true
+
+# Lockfile parsing
+cargo-lock.workspace = true
+
+# Serialization
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+serde_yaml.workspace = true
+
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Danny filesystem abstraction
+danny-fs.workspace = true
+
+# Async
+tokio = { workspace = true, features = ["fs", "macros", "rt-multi-thread"] }
+async-trait.workspace = true
+
+# Pattern matching for workspaces
+glob.workspace = true
+
+# Cryptographic checksums
+sha2.workspace = true
+hex.workspace = true
+base64.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+proptest.workspace = true
+
+[features]
+default = ["native-fs"]
+native-fs = ["danny-fs/native"]
+wasm = ["danny-fs/wasm"]
+property-tests = []
