@@ -31,7 +31,10 @@ async fn main() -> anyhow::Result<()> {
             println!("✓ This is a workspace root\n");
 
             // Find workspace members
-            match manager.find_workspace_members(&fs, cargo_toml.parent().unwrap()).await {
+            match manager
+                .find_workspace_members(&fs, cargo_toml.parent().unwrap())
+                .await
+            {
                 Ok(members) => {
                     println!("Workspace members ({}):", members.len());
                     for member in members {

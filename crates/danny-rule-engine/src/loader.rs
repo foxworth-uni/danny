@@ -131,7 +131,7 @@ impl<F: FileSystem> RuleLoader<F> {
         // This ensures oversized files trigger errors instead of being silently filtered
         let discovery_options = FsDiscoveryOptions {
             max_file_size: Some(100 * MAX_TOML_FILE_SIZE), // Very large limit - loader validates actual size
-            follow_symlinks: false, // Security: don't follow symlinks
+            follow_symlinks: false,                        // Security: don't follow symlinks
             max_depth: MAX_DIRECTORY_DEPTH,
             // .danny lives under a hidden directory, so we must include hidden files when scanning.
             // We still validate paths below, so this does not reduce security.

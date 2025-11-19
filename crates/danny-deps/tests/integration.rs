@@ -49,13 +49,19 @@ tokio = { version = "1.0", features = ["macros"] }
     }];
 
     // Dry run first
-    let result = manager.update(&fs, &cargo_toml, &updates, true).await.unwrap();
+    let result = manager
+        .update(&fs, &cargo_toml, &updates, true)
+        .await
+        .unwrap();
     assert_eq!(result.updates.len(), 1);
     assert_eq!(result.updates[0].package, "serde");
     assert_eq!(result.updates[0].new_version, "1.0.210");
 
     // Actually update
-    let result = manager.update(&fs, &cargo_toml, &updates, false).await.unwrap();
+    let result = manager
+        .update(&fs, &cargo_toml, &updates, false)
+        .await
+        .unwrap();
     assert_eq!(result.updates.len(), 1);
 
     // Parse again to verify
@@ -110,7 +116,10 @@ version = "0.1.0"
     assert!(manager.is_workspace_root(&fs, &root_cargo).await.unwrap());
 
     // Find members
-    let members = manager.find_workspace_members(&fs, temp_dir.path()).await.unwrap();
+    let members = manager
+        .find_workspace_members(&fs, temp_dir.path())
+        .await
+        .unwrap();
     assert_eq!(members.len(), 2);
 }
 

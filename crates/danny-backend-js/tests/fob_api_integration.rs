@@ -204,7 +204,11 @@ import type { Type } from './types';
     // Create stub files for the imports to be resolved
     std::fs::write(project_root.join("utils.ts"), "export const foo = 1;").unwrap();
     std::fs::write(project_root.join("types.ts"), "export type Type = string;").unwrap();
-    std::fs::write(project_root.join("side-effect-module.ts"), "console.log('side effect');").unwrap();
+    std::fs::write(
+        project_root.join("side-effect-module.ts"),
+        "console.log('side effect');",
+    )
+    .unwrap();
 
     let mut backend_options = HashMap::new();
     backend_options.insert(
@@ -245,36 +249,42 @@ import type { Type } from './types';
     println!("Side-effect imports: {}", side_effects.len());
     println!("Namespace imports: {}", namespaces.len());
     println!("Type-only imports: {}", type_only.len());
-    
+
     // Debug: print all findings
     for finding in &result.findings {
         match finding {
             Finding::SideEffectOnlyImport { source, .. } => {
                 println!("  ✓ Side-effect: {}", source);
             }
-            Finding::NamespaceImport { namespace_name, source, .. } => {
+            Finding::NamespaceImport {
+                namespace_name,
+                source,
+                ..
+            } => {
                 println!("  ✓ Namespace: {} from {}", namespace_name, source);
             }
-            Finding::TypeOnlyImport { source, specifiers, .. } => {
+            Finding::TypeOnlyImport {
+                source, specifiers, ..
+            } => {
                 println!("  ✓ Type-only: {:?} from {}", specifiers, source);
             }
             _ => {}
         }
     }
-    
+
     // Now assert that we found the expected patterns
     assert_eq!(
         side_effects.len(),
         1,
         "Should find 1 side-effect import (import 'side-effect-module')"
     );
-    
+
     assert_eq!(
         namespaces.len(),
         1,
         "Should find 1 namespace import (import * as utils)"
     );
-    
+
     assert_eq!(
         type_only.len(),
         1,
