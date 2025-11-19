@@ -1,8 +1,8 @@
 //! FileSystem trait for platform-agnostic filesystem operations.
 
-use std::path::{Path, PathBuf};
 use std::collections::HashSet;
 use std::io;
+use std::path::{Path, PathBuf};
 
 /// File metadata compatible across platforms.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -42,7 +42,7 @@ impl Default for DiscoveryOptions {
     fn default() -> Self {
         Self {
             max_file_size: Some(10 * 1024 * 1024), // 10MB default
-            follow_symlinks: false, // Security: don't follow symlinks
+            follow_symlinks: false,                // Security: don't follow symlinks
             max_depth: 100,
             include_hidden: false,
             respect_gitignore: true,
@@ -161,4 +161,3 @@ pub trait FileSystem: Send + Sync {
     /// All operations are validated against this root for security.
     fn project_root(&self) -> &Path;
 }
-

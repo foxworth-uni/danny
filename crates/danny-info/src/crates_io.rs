@@ -27,28 +27,24 @@ struct CrateInfo {
 }
 
 /// Fetch package information from crates.io registry
-pub async fn fetch_crates_io_package(
-    client: &HttpClient,
-    crate_name: &str,
-) -> Result<PackageInfo> {
+pub async fn fetch_crates_io_package(client: &HttpClient, crate_name: &str) -> Result<PackageInfo> {
     // Validate crate name
     if crate_name.is_empty() {
-        return Err(Error::InvalidPackageName("Crate name cannot be empty".to_string()));
+        return Err(Error::InvalidPackageName(
+            "Crate name cannot be empty".to_string(),
+        ));
     }
 
     let url = format!("{}/crates/{}", CRATES_IO_API_URL, crate_name);
 
     // Fetch crate metadata
-    let response: CratesIoResponse = client
-        .get_json(&url)
-        .await
-        .map_err(|e| {
-            if e.to_string().contains("404") {
-                Error::PackageNotFound(crate_name.to_string(), "crates.io".to_string())
-            } else {
-                e
-            }
-        })?;
+    let response: CratesIoResponse = client.get_json(&url).await.map_err(|e| {
+        if e.to_string().contains("404") {
+            Error::PackageNotFound(crate_name.to_string(), "crates.io".to_string())
+        } else {
+            e
+        }
+    })?;
 
     // Extract repository information
     let repository = response
@@ -96,7 +92,8 @@ mod tests {
     #[ignore] // Requires network access
     async fn test_nonexistent_crate() {
         let client = HttpClient::new().unwrap();
-        let result = fetch_crates_io_package(&client, "this-crate-definitely-does-not-exist-12345").await;
+        let result =
+            fetch_crates_io_package(&client, "this-crate-definitely-does-not-exist-12345").await;
         assert!(matches!(result, Err(Error::PackageNotFound(_, _))));
     }
 }

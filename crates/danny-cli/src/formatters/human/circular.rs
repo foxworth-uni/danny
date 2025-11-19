@@ -1,7 +1,7 @@
 //! Circular dependencies category formatter.
 
-use danny_core::Finding;
 use super::format_bytes;
+use danny_core::Finding;
 use Finding::*;
 
 pub fn print_circular(findings: &[&Finding]) {
@@ -24,11 +24,15 @@ pub fn print_circular(findings: &[&Finding]) {
             let cycle_str = circ
                 .cycle
                 .iter()
-                .map(|p| p.file_name().unwrap_or_default().to_string_lossy().to_string())
+                .map(|p| {
+                    p.file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string()
+                })
                 .collect::<Vec<_>>()
                 .join(" → ");
             println!("     {}", cycle_str);
         }
     }
 }
-

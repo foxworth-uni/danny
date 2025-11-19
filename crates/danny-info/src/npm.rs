@@ -29,7 +29,9 @@ struct DistTags {
 pub async fn fetch_npm_package(client: &HttpClient, package_name: &str) -> Result<PackageInfo> {
     // Validate package name (basic validation)
     if package_name.is_empty() {
-        return Err(Error::InvalidPackageName("Package name cannot be empty".to_string()));
+        return Err(Error::InvalidPackageName(
+            "Package name cannot be empty".to_string(),
+        ));
     }
 
     // Encode package name for URL (handle scoped packages like @scope/name)
@@ -42,16 +44,13 @@ pub async fn fetch_npm_package(client: &HttpClient, package_name: &str) -> Resul
     let url = format!("{}/{}", NPM_REGISTRY_URL, encoded_name);
 
     // Fetch package metadata
-    let response: NpmPackageResponse = client
-        .get_json(&url)
-        .await
-        .map_err(|e| {
-            if e.to_string().contains("404") {
-                Error::PackageNotFound(package_name.to_string(), "npm".to_string())
-            } else {
-                e
-            }
-        })?;
+    let response: NpmPackageResponse = client.get_json(&url).await.map_err(|e| {
+        if e.to_string().contains("404") {
+            Error::PackageNotFound(package_name.to_string(), "npm".to_string())
+        } else {
+            e
+        }
+    })?;
 
     // Extract repository information
     let repository = response

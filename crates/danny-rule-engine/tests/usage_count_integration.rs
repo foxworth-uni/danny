@@ -64,8 +64,8 @@ async fn test_find_rarely_used_exports() {
     let module = create_test_module_with_exports(
         "utils.ts",
         vec![
-            ("rarelyUsed1".to_string(), 1),  // Should match
-            ("rarelyUsed2".to_string(), 2),  // Should match
+            ("rarelyUsed1".to_string(), 1),    // Should match
+            ("rarelyUsed2".to_string(), 2),    // Should match
             ("popularExport".to_string(), 10), // Should not match
             ("unusedExport".to_string(), 0),   // Should not match
         ],
@@ -120,10 +120,10 @@ async fn test_find_unused_exports() {
     let module = create_test_module_with_exports(
         "hooks.ts",
         vec![
-            ("unusedHook1".to_string(), 0),  // Should match
-            ("unusedHook2".to_string(), 0),  // Should match
-            ("usedHook1".to_string(), 1),     // Should not match
-            ("usedHook2".to_string(), 5),     // Should not match
+            ("unusedHook1".to_string(), 0), // Should match
+            ("unusedHook2".to_string(), 0), // Should match
+            ("usedHook1".to_string(), 1),   // Should not match
+            ("usedHook2".to_string(), 5),   // Should not match
         ],
     );
 
@@ -178,8 +178,8 @@ async fn test_find_popular_exports() {
         vec![
             ("popularComponent1".to_string(), 10), // Should match
             ("popularComponent2".to_string(), 15), // Should match
-            ("rareComponent".to_string(), 2),       // Should not match
-            ("unusedComponent".to_string(), 0),     // Should not match
+            ("rareComponent".to_string(), 2),      // Should not match
+            ("unusedComponent".to_string(), 0),    // Should not match
         ],
     );
 
@@ -206,4 +206,3 @@ async fn test_find_popular_exports() {
     assert!(!matched_exports.contains(&"rareComponent".to_string()));
     assert!(!matched_exports.contains(&"unusedComponent".to_string()));
 }
-

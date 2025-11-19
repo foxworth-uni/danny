@@ -1,7 +1,7 @@
 //! Integration tests for Phase 1 features.
 
 use danny_backend_js::JsBackend;
-use danny_core::{LanguageBackend, AnalysisOptions, Finding};
+use danny_core::{AnalysisOptions, Finding, LanguageBackend};
 use std::path::PathBuf;
 
 #[tokio::test]
@@ -10,9 +10,7 @@ async fn test_nextjs_app_phase1_features() {
     let backend = JsBackend::new().unwrap();
 
     let options = AnalysisOptions {
-        entry_points: vec![
-            PathBuf::from("test-files/nextjs-app/pages/index.tsx"),
-        ],
+        entry_points: vec![PathBuf::from("test-files/nextjs-app/pages/index.tsx")],
         project_root: PathBuf::from("test-files/nextjs-app"),
         ..Default::default()
     };
@@ -30,8 +28,7 @@ async fn test_nextjs_app_phase1_features() {
     // Feature 3: Type-only exports should be counted
     assert!(result.statistics.type_only_unused_exports_count >= 0);
     assert!(
-        result.statistics.type_only_unused_exports_count
-            <= result.statistics.unused_exports_count
+        result.statistics.type_only_unused_exports_count <= result.statistics.unused_exports_count
     );
 
     // Feature 4: Dynamic imports should be detected
@@ -40,7 +37,10 @@ async fn test_nextjs_app_phase1_features() {
         .iter()
         .filter(|f| matches!(f, Finding::DynamicImport(_)))
         .collect();
-    assert_eq!(dynamic_imports.len(), result.statistics.dynamic_imports_count);
+    assert_eq!(
+        dynamic_imports.len(),
+        result.statistics.dynamic_imports_count
+    );
 
     // Feature 5: Circular dependencies
     let circular_deps: Vec<_> = result
@@ -72,11 +72,10 @@ async fn test_nextjs_app_phase1_features() {
 fn test_phase1_features_structure() {
     // This test verifies that Phase 1 features are properly integrated
     // It doesn't require actual analysis, just checks that types compile
-    
+
     // Verify backend can be created
     let backend = JsBackend::new();
     assert!(backend.is_ok());
-    
+
     // If we get here, the Phase 1 integration didn't break basic structure
 }
-

@@ -49,9 +49,7 @@ impl FileUpdater {
         // Generate temp filename: original.ext.tmp
         let temp_path = path.with_extension(format!(
             "{}.tmp",
-            path.extension()
-                .and_then(|ext| ext.to_str())
-                .unwrap_or("")
+            path.extension().and_then(|ext| ext.to_str()).unwrap_or("")
         ));
 
         // Write to temp file
@@ -77,9 +75,7 @@ impl FileUpdater {
         // Create temp file in same directory
         let temp_path = path.with_extension(format!(
             "{}.tmp",
-            path.extension()
-                .and_then(|ext| ext.to_str())
-                .unwrap_or("")
+            path.extension().and_then(|ext| ext.to_str()).unwrap_or("")
         ));
 
         // Write to temp file synchronously
@@ -98,12 +94,15 @@ impl FileUpdater {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use danny_fs::NativeFileSystem;
+    use std::sync::Arc;
     use tempfile::TempDir;
 
     #[tokio::test]
     async fn test_update_file() {
         let temp_dir = TempDir::new().unwrap();
         let file_path = temp_dir.path().join("test.txt");
+        let fs = Arc::new(NativeFileSystem::new(temp_dir.path()).unwrap());
 
         // Create initial file
         std::fs::write(&file_path, "old content").unwrap();
@@ -111,7 +110,7 @@ mod tests {
         // Update it
         let updater = FileUpdater::new(false);
         updater
-            .update_file(&file_path, "new content".to_string())
+            .update_file(&fs, &file_path, "new content".to_string())
             .await
             .unwrap();
 
@@ -124,6 +123,7 @@ mod tests {
     async fn test_dry_run() {
         let temp_dir = TempDir::new().unwrap();
         let file_path = temp_dir.path().join("test.txt");
+        let fs = Arc::new(NativeFileSystem::new(temp_dir.path()).unwrap());
 
         // Create initial file
         std::fs::write(&file_path, "old content").unwrap();
@@ -131,7 +131,7 @@ mod tests {
         // Try to update in dry-run mode
         let updater = FileUpdater::new(true);
         updater
-            .update_file(&file_path, "new content".to_string())
+            .update_file(&fs, &file_path, "new content".to_string())
             .await
             .unwrap();
 
@@ -159,4 +159,3 @@ mod tests {
         assert_eq!(content, "new content");
     }
 }
-

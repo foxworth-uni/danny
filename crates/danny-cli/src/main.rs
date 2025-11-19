@@ -1,11 +1,11 @@
 //! Danny CLI - Dead code analyzer for JavaScript/TypeScript.
 
-mod commands;
-mod ignore;
-mod formatters;
-mod display;
 mod cli;
+mod commands;
+mod display;
 mod entry_points;
+mod formatters;
+mod ignore;
 
 use anyhow::Result;
 use clap::Parser;
@@ -105,22 +105,20 @@ pub enum OutputFormat {
     Json,
 }
 
-
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
     // Handle subcommands
     match cli.command {
-        Some(Command::Config { command }) => {
-            commands::handle_config_command(command)
-        }
+        Some(Command::Config { command }) => commands::handle_config_command(command),
         None => {
             // Parse category strings to Category enums
-            let categories: Vec<Category> = cli.category
+            let categories: Vec<Category> = cli
+                .category
                 .iter()
                 .filter_map(|s| Category::from_cli_name(s))
                 .collect();
-            
+
             // Default to analysis with new category system
             cli::analysis::run_analysis(&cli::analysis::AnalysisRunOptions {
                 paths: cli.paths.clone(),

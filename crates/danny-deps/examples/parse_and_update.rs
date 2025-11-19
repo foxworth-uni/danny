@@ -3,9 +3,12 @@
 //! Run with: cargo run --package danny-deps --example parse_and_update
 
 use danny_deps::{CargoDependencyManager, DependencyManager, DependencyType, DependencyUpdate};
+use danny_fs::NativeFileSystem;
 use std::path::Path;
+use std::sync::Arc;
 
-fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
     println!("=== danny-deps: Parse and Update Dependencies ===\n");
 
     let manager = CargoDependencyManager::new();
@@ -16,9 +19,15 @@ fn main() -> anyhow::Result<()> {
         return Ok(());
     }
 
+    // Create FileSystem instance
+    let fs = Arc::new(
+        NativeFileSystem::new(cargo_toml.parent().unwrap_or_else(|| Path::new(".")))
+            .map_err(|e| anyhow::anyhow!("Failed to create filesystem: {}", e))?,
+    );
+
     // Parse the manifest
     println!("Parsing Cargo.toml...");
-    let manifest = manager.parse(cargo_toml)?;
+    let manifest = manager.parse(&fs, cargo_toml).await?;
     println!("Package: {} v{}\n", manifest.name, manifest.version);
 
     // List all dependencies
@@ -45,7 +54,7 @@ fn main() -> anyhow::Result<()> {
         dep_type: DependencyType::Runtime,
     }];
 
-    match manager.update(cargo_toml, &updates, true) {
+    match manager.update(&fs, cargo_toml, &updates, true).await {
         Ok(result) => {
             if result.updates.is_empty() {
                 println!("  serde not found in dependencies");
@@ -64,4 +73,3 @@ fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
-

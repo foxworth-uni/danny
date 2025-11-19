@@ -137,32 +137,20 @@ impl CapabilityDisplay {
 
     fn mode_header(&self) -> String {
         match self.target.mode() {
-            AnalysisMode::Package => {
-                "📦 Package Mode Analysis".bright_blue().bold().to_string()
-            }
-            AnalysisMode::Files => {
-                "📄 File-Level Analysis Mode"
-                    .bright_yellow()
-                    .bold()
-                    .to_string()
-            }
+            AnalysisMode::Package => "📦 Package Mode Analysis".bright_blue().bold().to_string(),
+            AnalysisMode::Files => "📄 File-Level Analysis Mode"
+                .bright_yellow()
+                .bold()
+                .to_string(),
         }
     }
 
     fn format_reason(&self, reason: &UnavailableReason) -> &'static str {
         match reason {
-            UnavailableReason::RequiresFullGraph => {
-                "requires full dependency graph"
-            }
-            UnavailableReason::RequiresPackageJson => {
-                "requires package.json context"
-            }
-            UnavailableReason::RequiresFrameworkDetection => {
-                "no framework detected"
-            }
-            UnavailableReason::RequiresNodeModules => {
-                "node_modules not found (run npm install)"
-            }
+            UnavailableReason::RequiresFullGraph => "requires full dependency graph",
+            UnavailableReason::RequiresPackageJson => "requires package.json context",
+            UnavailableReason::RequiresFrameworkDetection => "no framework detected",
+            UnavailableReason::RequiresNodeModules => "node_modules not found (run npm install)",
         }
     }
 
@@ -187,4 +175,3 @@ impl CapabilityDisplay {
         }
     }
 }
-

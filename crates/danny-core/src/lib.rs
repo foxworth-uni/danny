@@ -52,10 +52,10 @@
 //! ```
 
 pub mod backend;
+pub mod circular_deps;
+pub mod enrichment;
 pub mod error;
 pub mod types;
-pub mod enrichment;
-pub mod circular_deps;
 pub mod validation;
 
 // Re-export core types for convenience
@@ -64,7 +64,7 @@ pub use error::{Error, Result};
 pub use types::{
     AnalysisCapabilities, AnalysisError, AnalysisMode, AnalysisOptions, AnalysisResult, Category,
     ClassMemberKind, ClassMemberStats, Dependency, DependencyCoverageStats, EnumStats, EnumValue,
-    ErrorSeverity, ExportKind, Finding, IgnoredFinding, IgnoredFindingsBreakdown,
-    MemberVisibility, NpmDependencyType, PatternType, SafetyAssessment, SourceLocation,
-    Statistics, SymbolSpan, TypeCoverage, UnavailableCategory, UnavailableReason,
+    ErrorSeverity, ExportKind, Finding, IgnoredFinding, IgnoredFindingsBreakdown, MemberVisibility,
+    NpmDependencyType, PatternType, SafetyAssessment, SourceLocation, Statistics, SymbolSpan,
+    TypeCoverage, UnavailableCategory, UnavailableReason,
 };

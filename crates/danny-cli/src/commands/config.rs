@@ -61,7 +61,7 @@ pub enum ConfigCommand {
 
 pub fn handle_config_command(cmd: ConfigCommand) -> Result<()> {
     let runtime = Runtime::new().context("Failed to create tokio runtime")?;
-    
+
     runtime.block_on(async {
         match cmd {
             ConfigCommand::Init => init_config().await,
@@ -111,7 +111,10 @@ async fn add_project(path: PathBuf, name: Option<String>, id: Option<String>) ->
         abs_path
             .file_name()
             .and_then(|n| n.to_str())
-            .map(|s| s.to_lowercase().replace(|c: char| !c.is_alphanumeric() && c != '-', "-"))
+            .map(|s| {
+                s.to_lowercase()
+                    .replace(|c: char| !c.is_alphanumeric() && c != '-', "-")
+            })
             .unwrap_or_else(|| "project".to_string())
     });
 
@@ -134,7 +137,9 @@ async fn add_project(path: PathBuf, name: Option<String>, id: Option<String>) ->
         workspace_members: None,
     };
 
-    manager.add_project(project).await
+    manager
+        .add_project(project)
+        .await
         .with_context(|| format!("Failed to add project '{}'", project_id))?;
 
     println!("✓ Added project: {}", project_id);
@@ -144,7 +149,8 @@ async fn add_project(path: PathBuf, name: Option<String>, id: Option<String>) ->
 }
 
 async fn list_projects(enabled_only: bool) -> Result<()> {
-    let manager = ConfigManager::load().await
+    let manager = ConfigManager::load()
+        .await
         .context("Config not found. Run 'danny config init' first.")?;
 
     let projects = if enabled_only {
@@ -168,7 +174,10 @@ async fn list_projects(enabled_only: bool) -> Result<()> {
         println!("  Path: {}", project.path.display());
 
         if let Some(last_checked) = project.last_checked {
-            println!("  Last checked: {}", last_checked.format("%Y-%m-%d %H:%M:%S"));
+            println!(
+                "  Last checked: {}",
+                last_checked.format("%Y-%m-%d %H:%M:%S")
+            );
         }
 
         if let Some(settings) = &project.settings {
@@ -183,10 +192,13 @@ async fn list_projects(enabled_only: bool) -> Result<()> {
 }
 
 async fn enable_project(project_id: String) -> Result<()> {
-    let mut manager = ConfigManager::load().await
+    let mut manager = ConfigManager::load()
+        .await
         .context("Config not found. Run 'danny config init' first.")?;
 
-    manager.enable_project(&project_id).await
+    manager
+        .enable_project(&project_id)
+        .await
         .with_context(|| format!("Failed to enable project '{}'", project_id))?;
 
     println!("✓ Enabled project: {}", project_id);
@@ -194,10 +206,13 @@ async fn enable_project(project_id: String) -> Result<()> {
 }
 
 async fn disable_project(project_id: String) -> Result<()> {
-    let mut manager = ConfigManager::load().await
+    let mut manager = ConfigManager::load()
+        .await
         .context("Config not found. Run 'danny config init' first.")?;
 
-    manager.disable_project(&project_id).await
+    manager
+        .disable_project(&project_id)
+        .await
         .with_context(|| format!("Failed to disable project '{}'", project_id))?;
 
     println!("✓ Disabled project: {}", project_id);
@@ -205,11 +220,13 @@ async fn disable_project(project_id: String) -> Result<()> {
 }
 
 async fn remove_project(project_id: String, skip_confirm: bool) -> Result<()> {
-    let mut manager = ConfigManager::load().await
+    let mut manager = ConfigManager::load()
+        .await
         .context("Config not found. Run 'danny config init' first.")?;
 
     // Check if project exists
-    let project = manager.get_project(&project_id)
+    let project = manager
+        .get_project(&project_id)
         .ok_or_else(|| anyhow::anyhow!("Project not found: {}", project_id))?;
 
     // Confirm removal unless --yes flag is provided
@@ -231,7 +248,9 @@ async fn remove_project(project_id: String, skip_confirm: bool) -> Result<()> {
         }
     }
 
-    manager.remove_project(&project_id).await
+    manager
+        .remove_project(&project_id)
+        .await
         .with_context(|| format!("Failed to remove project '{}'", project_id))?;
 
     println!("✓ Removed project: {}", project_id);
@@ -245,7 +264,8 @@ fn show_config_path() -> Result<()> {
 }
 
 async fn validate_config() -> Result<()> {
-    let manager = ConfigManager::load().await
+    let manager = ConfigManager::load()
+        .await
         .context("Config not found or invalid. Run 'danny config init' first.")?;
 
     let config = manager.config();
@@ -253,7 +273,10 @@ async fn validate_config() -> Result<()> {
     println!("✓ Config is valid");
     println!("  Version: {}", config.version);
     println!("  Projects: {}", config.projects.len());
-    println!("  Enabled: {}", config.projects.iter().filter(|p| p.enabled).count());
+    println!(
+        "  Enabled: {}",
+        config.projects.iter().filter(|p| p.enabled).count()
+    );
 
     // Validate each project path
     let mut invalid_paths = Vec::new();

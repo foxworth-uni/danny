@@ -47,4 +47,3 @@ pub const REGEX_DFA_SIZE_LIMIT: usize = 2_000_000; // 2MB
 /// loading rules from nested directories. Most real projects don't
 /// need more than 10 levels of nesting.
 pub const MAX_DIRECTORY_DEPTH: usize = 10;
-

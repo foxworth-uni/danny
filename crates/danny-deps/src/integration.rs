@@ -1,8 +1,6 @@
 //! Integration with danny-info for unified dependency management
 
-use crate::{
-    DependencyManager, Ecosystem, Error, Result, UpdateType, VersionReq,
-};
+use crate::{DependencyManager, Ecosystem, Error, Result, UpdateType, VersionReq};
 use danny_fs::NativeFileSystem;
 use danny_info::{InfoClient, Registry};
 use std::path::Path;
@@ -78,18 +76,22 @@ impl UnifiedDependencyManager {
         let manifest_dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
         let fs = Arc::new(
             NativeFileSystem::new(manifest_dir)
-                .map_err(|e| Error::Other(format!("Failed to create filesystem: {}", e)))?
+                .map_err(|e| Error::Other(format!("Failed to create filesystem: {}", e)))?,
         );
 
         // Parse local dependency file
         let manifest = match ecosystem {
             Ecosystem::Rust => {
                 use crate::CargoDependencyManager;
-                CargoDependencyManager::new().parse(&fs, manifest_path).await?
+                CargoDependencyManager::new()
+                    .parse(&fs, manifest_path)
+                    .await?
             }
             Ecosystem::JavaScript => {
                 use crate::NpmDependencyManager;
-                NpmDependencyManager::new().parse(&fs, manifest_path).await?
+                NpmDependencyManager::new()
+                    .parse(&fs, manifest_path)
+                    .await?
             }
         };
 
@@ -104,28 +106,29 @@ impl UnifiedDependencyManager {
 
             // Fetch latest version from registry
             let latest_info = match ecosystem {
-                Ecosystem::Rust => {
-                    self.info_client
-                        .fetch_crates_io(&dep.name)
-                        .await
-                        .map_err(|e| Error::Other(format!("Failed to fetch {}: {}", dep.name, e)))?
-                }
-                Ecosystem::JavaScript => {
-                    self.info_client
-                        .fetch_npm(&dep.name)
-                        .await
-                        .map_err(|e| Error::Other(format!("Failed to fetch {}: {}", dep.name, e)))?
-                }
+                Ecosystem::Rust => self
+                    .info_client
+                    .fetch_crates_io(&dep.name)
+                    .await
+                    .map_err(|e| Error::Other(format!("Failed to fetch {}: {}", dep.name, e)))?,
+                Ecosystem::JavaScript => self
+                    .info_client
+                    .fetch_npm(&dep.name)
+                    .await
+                    .map_err(|e| Error::Other(format!("Failed to fetch {}: {}", dep.name, e)))?,
             };
 
             // Parse versions
             let latest_version = latest_info.version.clone();
 
             // Determine update type
-            let update_type = if let Some(current) = &dep.version_req.raw.strip_prefix("^")
+            let update_type = if let Some(current) = &dep
+                .version_req
+                .raw
+                .strip_prefix("^")
                 .or_else(|| dep.version_req.raw.strip_prefix("~"))
                 .or_else(|| dep.version_req.raw.strip_prefix(">="))
-                .or_else(|| Some(dep.version_req.raw.as_str()))
+                .or(Some(dep.version_req.raw.as_str()))
             {
                 crate::version::update_type(current, &latest_version, ecosystem)
                     .unwrap_or(UpdateType::None)
@@ -134,8 +137,8 @@ impl UnifiedDependencyManager {
             };
 
             // Check if latest satisfies requirement
-            let parsed_req = crate::version::ParsedVersionReq::parse(&dep.version_req.raw, ecosystem)
-                .ok();
+            let parsed_req =
+                crate::version::ParsedVersionReq::parse(&dep.version_req.raw, ecosystem).ok();
             let satisfies_requirement = parsed_req
                 .as_ref()
                 .and_then(|req| req.matches(&latest_version).ok())
@@ -260,4 +263,3 @@ mod tests {
         assert_eq!(safe[0].package, "test2");
     }
 }
-

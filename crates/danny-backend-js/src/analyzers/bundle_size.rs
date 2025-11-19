@@ -14,9 +14,7 @@ impl BundleSizeAnalyzer {
     ///
     /// # Returns
     /// Bundle size impact breakdown
-    pub fn calculate_impact(
-        modules: Vec<(PathBuf, usize, bool)>,
-    ) -> BundleSizeImpact {
+    pub fn calculate_impact(modules: Vec<(PathBuf, usize, bool)>) -> BundleSizeImpact {
         let mut total_savings = 0;
         let mut safe_savings = 0;
         let mut by_module = Vec::new();
@@ -177,4 +175,3 @@ mod tests {
         }
     }
 }
-

@@ -31,17 +31,19 @@ struct GithubRepository {
 pub async fn fetch_jsr_package(client: &HttpClient, package_name: &str) -> Result<PackageInfo> {
     // Validate package name format
     if !package_name.starts_with('@') || !package_name.contains('/') {
-        return Err(Error::InvalidPackageName(
-            format!("JSR package name must be in format @scope/package, got: {}", package_name)
-        ));
+        return Err(Error::InvalidPackageName(format!(
+            "JSR package name must be in format @scope/package, got: {}",
+            package_name
+        )));
     }
 
     // Split into scope and name
     let parts: Vec<&str> = package_name.trim_start_matches('@').split('/').collect();
     if parts.len() != 2 {
-        return Err(Error::InvalidPackageName(
-            format!("Invalid JSR package name format: {}", package_name)
-        ));
+        return Err(Error::InvalidPackageName(format!(
+            "Invalid JSR package name format: {}",
+            package_name
+        )));
     }
 
     let scope = parts[0];
@@ -50,16 +52,13 @@ pub async fn fetch_jsr_package(client: &HttpClient, package_name: &str) -> Resul
     let url = format!("{}/@{}/{}/meta.json", JSR_API_URL, scope, name);
 
     // Fetch package metadata
-    let response: JsrPackageMetadata = client
-        .get_json(&url)
-        .await
-        .map_err(|e| {
-            if e.to_string().contains("404") {
-                Error::PackageNotFound(package_name.to_string(), "jsr".to_string())
-            } else {
-                e
-            }
-        })?;
+    let response: JsrPackageMetadata = client.get_json(&url).await.map_err(|e| {
+        if e.to_string().contains("404") {
+            Error::PackageNotFound(package_name.to_string(), "jsr".to_string())
+        } else {
+            e
+        }
+    })?;
 
     // Extract version (use latest)
     let version = response.latest.unwrap_or_else(|| "unknown".to_string());
@@ -67,11 +66,7 @@ pub async fn fetch_jsr_package(client: &HttpClient, package_name: &str) -> Resul
     // Extract repository information from GitHub repository field
     let repository = response.github_repository.as_ref().map(|gh| {
         let url = format!("https://github.com/{}/{}", gh.owner, gh.name);
-        crate::types::RepositoryUrl::new(
-            gh.owner.clone(),
-            gh.name.clone(),
-            url,
-        )
+        crate::types::RepositoryUrl::new(gh.owner.clone(), gh.name.clone(), url)
     });
 
     Ok(PackageInfo {

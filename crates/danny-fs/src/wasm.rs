@@ -1,9 +1,9 @@
 //! WASM filesystem implementation using in-memory storage.
 
-use crate::{FileSystem, FileMetadata, DiscoveryOptions};
-use std::path::{Path, PathBuf};
+use crate::{DiscoveryOptions, FileMetadata, FileSystem};
 use std::collections::{HashMap, HashSet};
 use std::io;
+use std::path::{Path, PathBuf};
 
 #[cfg(feature = "wasm")]
 use parking_lot::RwLock;
@@ -63,7 +63,7 @@ impl WasmFileSystem {
             if !normalized.starts_with(&project_root) {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
-                    format!("File path outside project root: {}", path.display())
+                    format!("File path outside project root: {}", path.display()),
                 ));
             }
         }
@@ -86,7 +86,7 @@ impl WasmFileSystem {
         if !normalized.starts_with(&self.project_root) {
             return Err(io::Error::new(
                 io::ErrorKind::PermissionDenied,
-                "Path outside project root"
+                "Path outside project root",
             ));
         }
 
@@ -118,7 +118,7 @@ impl WasmFileSystem {
                     if components.is_empty() || (components.len() == 1 && is_absolute) {
                         return Err(io::Error::new(
                             io::ErrorKind::PermissionDenied,
-                            "Path attempts to escape project root using .."
+                            "Path attempts to escape project root using ..",
                         ));
                     }
                     components.pop();
@@ -151,7 +151,7 @@ impl WasmFileSystem {
                     "Path traversal detected: {} is outside {}",
                     normalized.display(),
                     self.project_root.display()
-                )
+                ),
             ));
         }
 
@@ -170,33 +170,36 @@ impl FileSystem for WasmFileSystem {
         #[cfg(not(feature = "wasm"))]
         {
             let _ = normalized;
-            Err(io::Error::new(io::ErrorKind::Unsupported, "WASM feature not enabled"))
+            Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "WASM feature not enabled",
+            ))
         }
     }
 
     async fn read_to_string(&self, path: &Path) -> io::Result<String> {
         let bytes = self.read(path).await?;
-        String::from_utf8(bytes)
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+        String::from_utf8(bytes).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
     }
 
     async fn read(&self, path: &Path) -> io::Result<Vec<u8>> {
         let normalized = self.validate_path(path)?;
         #[cfg(feature = "wasm")]
         {
-            self.files
-                .read()
-                .get(&normalized)
-                .cloned()
-                .ok_or_else(|| io::Error::new(
+            self.files.read().get(&normalized).cloned().ok_or_else(|| {
+                io::Error::new(
                     io::ErrorKind::NotFound,
-                    format!("File not found: {}", normalized.display())
-                ))
+                    format!("File not found: {}", normalized.display()),
+                )
+            })
         }
         #[cfg(not(feature = "wasm"))]
         {
             let _ = normalized;
-            Err(io::Error::new(io::ErrorKind::Unsupported, "WASM feature not enabled"))
+            Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "WASM feature not enabled",
+            ))
         }
     }
 
@@ -226,7 +229,10 @@ impl FileSystem for WasmFileSystem {
         #[cfg(not(feature = "wasm"))]
         {
             let _ = normalized;
-            Err(io::Error::new(io::ErrorKind::Unsupported, "WASM feature not enabled"))
+            Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "WASM feature not enabled",
+            ))
         }
     }
 
@@ -244,7 +250,10 @@ impl FileSystem for WasmFileSystem {
         #[cfg(not(feature = "wasm"))]
         {
             let _ = (normalized, contents);
-            Err(io::Error::new(io::ErrorKind::Unsupported, "WASM feature not enabled"))
+            Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "WASM feature not enabled",
+            ))
         }
     }
 
@@ -261,7 +270,10 @@ impl FileSystem for WasmFileSystem {
         #[cfg(not(feature = "wasm"))]
         {
             let _ = normalized;
-            Err(io::Error::new(io::ErrorKind::Unsupported, "WASM feature not enabled"))
+            Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "WASM feature not enabled",
+            ))
         }
     }
 
@@ -282,7 +294,10 @@ impl FileSystem for WasmFileSystem {
         #[cfg(not(feature = "wasm"))]
         {
             let _ = (from_normalized, to_normalized);
-            Err(io::Error::new(io::ErrorKind::Unsupported, "WASM feature not enabled"))
+            Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "WASM feature not enabled",
+            ))
         }
     }
 
@@ -336,7 +351,10 @@ impl FileSystem for WasmFileSystem {
         #[cfg(not(feature = "wasm"))]
         {
             let _ = (normalized_root, root_str, extensions);
-            Err(io::Error::new(io::ErrorKind::Unsupported, "WASM feature not enabled"))
+            Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "WASM feature not enabled",
+            ))
         }
     }
 
@@ -348,4 +366,3 @@ impl FileSystem for WasmFileSystem {
         &self.project_root
     }
 }
-

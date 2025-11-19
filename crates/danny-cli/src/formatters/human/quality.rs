@@ -1,19 +1,28 @@
 //! Quality category formatter.
 
-use danny_core::Finding;
 use danny_core::types::{CodeSmellType, SmellSeverity};
+use danny_core::Finding;
 use Finding::*;
 
 pub fn print_quality(findings: &[&Finding]) {
     println!("\n⚡ Quality ({}):", findings.len());
     let mut high_impact = Vec::new();
     let mut code_quality = Vec::new();
-    
+
     for finding in findings {
-        if let CodeSmell { severity, smell_type, .. } = finding {
+        if let CodeSmell {
+            severity,
+            smell_type,
+            ..
+        } = finding
+        {
             match (severity, smell_type) {
-                (SmellSeverity::Error | SmellSeverity::Warning,
-                 CodeSmellType::LongFunction | CodeSmellType::TooManyParameters | CodeSmellType::LargeClass) => {
+                (
+                    SmellSeverity::Error | SmellSeverity::Warning,
+                    CodeSmellType::LongFunction
+                    | CodeSmellType::TooManyParameters
+                    | CodeSmellType::LargeClass,
+                ) => {
                     high_impact.push(*finding);
                 }
                 _ => {
@@ -22,14 +31,14 @@ pub fn print_quality(findings: &[&Finding]) {
             }
         }
     }
-    
+
     if !high_impact.is_empty() {
         println!("  🔥 High Impact Issues (fix these first):");
-        
+
         let mut long_functions = Vec::new();
         let mut too_many_params = Vec::new();
         let mut large_classes = Vec::new();
-        
+
         for finding in &high_impact {
             if let CodeSmell { smell_type, .. } = finding {
                 match smell_type {
@@ -40,12 +49,22 @@ pub fn print_quality(findings: &[&Finding]) {
                 }
             }
         }
-        
+
         if !long_functions.is_empty() {
             println!("\n    Large Functions ({}):", long_functions.len());
             for finding in long_functions.iter().take(10) {
-                if let CodeSmell { location, symbol_name, line, details, .. } = finding {
-                    let symbol_display = symbol_name.as_ref().map(|s| format!("{}()", s)).unwrap_or_else(|| "unknown".to_string());
+                if let CodeSmell {
+                    location,
+                    symbol_name,
+                    line,
+                    details,
+                    ..
+                } = finding
+                {
+                    let symbol_display = symbol_name
+                        .as_ref()
+                        .map(|s| format!("{}()", s))
+                        .unwrap_or_else(|| "unknown".to_string());
                     let line_display = line.map(|l| format!(":{}", l)).unwrap_or_default();
                     println!(
                         "      ⚠️  {}{} - {}",
@@ -62,12 +81,22 @@ pub fn print_quality(findings: &[&Finding]) {
                 println!("      ... and {} more", long_functions.len() - 10);
             }
         }
-        
+
         if !too_many_params.is_empty() {
             println!("\n    Too Many Parameters ({}):", too_many_params.len());
             for finding in too_many_params.iter().take(10) {
-                if let CodeSmell { location, symbol_name, line, details, .. } = finding {
-                    let symbol_display = symbol_name.as_ref().map(|s| format!("{}()", s)).unwrap_or_else(|| "unknown".to_string());
+                if let CodeSmell {
+                    location,
+                    symbol_name,
+                    line,
+                    details,
+                    ..
+                } = finding
+                {
+                    let symbol_display = symbol_name
+                        .as_ref()
+                        .map(|s| format!("{}()", s))
+                        .unwrap_or_else(|| "unknown".to_string());
                     let line_display = line.map(|l| format!(":{}", l)).unwrap_or_default();
                     println!(
                         "      ⚠️  {}{} - {}",
@@ -84,12 +113,20 @@ pub fn print_quality(findings: &[&Finding]) {
                 println!("      ... and {} more", too_many_params.len() - 10);
             }
         }
-        
+
         if !large_classes.is_empty() {
             println!("\n    Large Classes ({}):", large_classes.len());
             for finding in large_classes.iter().take(10) {
-                if let CodeSmell { location, symbol_name, line, details, .. } = finding {
-                    let symbol_display = symbol_name.clone().unwrap_or_else(|| "unknown".to_string());
+                if let CodeSmell {
+                    location,
+                    symbol_name,
+                    line,
+                    details,
+                    ..
+                } = finding
+                {
+                    let symbol_display =
+                        symbol_name.clone().unwrap_or_else(|| "unknown".to_string());
                     let line_display = line.map(|l| format!(":{}", l)).unwrap_or_default();
                     println!(
                         "      ⚠️  {}{} - {}",
@@ -107,11 +144,19 @@ pub fn print_quality(findings: &[&Finding]) {
             }
         }
     }
-    
+
     if !code_quality.is_empty() {
         println!("\n  Code Quality Issues ({}):", code_quality.len());
         for finding in code_quality.iter().take(20) {
-            if let CodeSmell { location, symbol_name, line, details, smell_type, .. } = finding {
+            if let CodeSmell {
+                location,
+                symbol_name,
+                line,
+                details,
+                smell_type,
+                ..
+            } = finding
+            {
                 let type_name = match smell_type {
                     CodeSmellType::MagicNumber => "Magic Number",
                     CodeSmellType::MessageChain => "Message Chain",
@@ -126,7 +171,10 @@ pub fn print_quality(findings: &[&Finding]) {
                     CodeSmellType::LowCohesion => "Low Cohesion",
                     _ => "Code Smell",
                 };
-                let symbol_display = symbol_name.as_ref().map(|s| format!(" - {}", s)).unwrap_or_default();
+                let symbol_display = symbol_name
+                    .as_ref()
+                    .map(|s| format!(" - {}", s))
+                    .unwrap_or_default();
                 let line_display = line.map(|l| format!(":{}", l)).unwrap_or_default();
                 println!(
                     "    💡 {}{}{} ({})",
@@ -145,4 +193,3 @@ pub fn print_quality(findings: &[&Finding]) {
         }
     }
 }
-

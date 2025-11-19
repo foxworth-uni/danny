@@ -43,7 +43,7 @@ async-trait.workspace = true
 tokio.workspace = true
 
 # Hash map (for compatibility with Fob's FxHashMap)
-rustc-hash = "1.1"
+rustc-hash = "2.1.1"
 
 [dev-dependencies]
 tempfile = { workspace = true }

@@ -47,12 +47,13 @@ impl RuleEngine {
     pub async fn apply(&self, graph: &ModuleGraph) -> Result<RuleStats> {
         let mut stats = RuleStats::default();
 
-        let modules = graph.modules().await.map_err(|e| {
-            crate::RuleError::LoadError {
+        let modules = graph
+            .modules()
+            .await
+            .map_err(|e| crate::RuleError::LoadError {
                 path: "module graph".to_string(),
                 source: Box::new(e),
-            }
-        })?;
+            })?;
 
         for module in &modules {
             for rule in &self.rules {
@@ -103,7 +104,11 @@ impl RuleEngine {
                     // File-level rule (e.g., skip entire file)
                     if rule.matcher.matches(module, &placeholder_export()) {
                         #[cfg(debug_assertions)]
-                        eprintln!("Rule '{}' matched file: {}", rule.name, module.path.display());
+                        eprintln!(
+                            "Rule '{}' matched file: {}",
+                            rule.name,
+                            module.path.display()
+                        );
 
                         apply_fn(module, None, &rule.action).map_err(|e| {
                             crate::RuleError::LoadError {
@@ -120,7 +125,12 @@ impl RuleEngine {
                     for export in &module.exports {
                         if rule.matcher.matches(module, export) {
                             #[cfg(debug_assertions)]
-                            eprintln!("Rule '{}' matched export '{}' in {}", rule.name, export.name, module.path.display());
+                            eprintln!(
+                                "Rule '{}' matched export '{}' in {}",
+                                rule.name,
+                                export.name,
+                                module.path.display()
+                            );
 
                             apply_fn(module, Some(export), &rule.action).map_err(|e| {
                                 crate::RuleError::LoadError {

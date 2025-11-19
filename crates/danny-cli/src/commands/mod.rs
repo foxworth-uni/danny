@@ -1,3 +1,3 @@
 pub mod config;
 
-pub use config::{ConfigCommand, handle_config_command};
+pub use config::{handle_config_command, ConfigCommand};

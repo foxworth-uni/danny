@@ -8,9 +8,10 @@ use crate::{Result, RuleError, TomlRuleFile};
 /// Extract entry point patterns from a TOML rule file
 ///
 /// Returns a vector of entry point patterns sorted by priority (higher first).
-pub fn extract_entry_points(toml_content: &str) -> Result<Vec<crate::toml_rule::EntryPointPattern>> {
-    let file: TomlRuleFile = toml::from_str(toml_content)
-        .map_err(|e| RuleError::TomlError(e))?;
+pub fn extract_entry_points(
+    toml_content: &str,
+) -> Result<Vec<crate::toml_rule::EntryPointPattern>> {
+    let file: TomlRuleFile = toml::from_str(toml_content).map_err(RuleError::TomlError)?;
 
     let mut entry_points = file.entry_points;
 
@@ -66,4 +67,3 @@ mod tests {
         assert_eq!(entry_points.len(), 0);
     }
 }
-

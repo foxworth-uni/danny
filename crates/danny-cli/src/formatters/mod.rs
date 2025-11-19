@@ -23,4 +23,3 @@ impl Formatter for JsonFormatter {
         json::print_json(result);
     }
 }
-

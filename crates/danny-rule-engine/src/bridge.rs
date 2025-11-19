@@ -4,10 +4,10 @@
 //! RuleEngine and implements Fob's `FrameworkRule` trait, allowing TOML
 //! rules to integrate seamlessly with Fob's analysis pipeline.
 
+use crate::{RuleAction, RuleEngine, TomlRule, TomlRuleFile};
 use async_trait::async_trait;
 use fob::graph::{Export, FrameworkRule, Module, ModuleGraph};
 use std::sync::OnceLock;
-use crate::{RuleAction, RuleEngine, TomlRule, TomlRuleFile};
 
 /// A framework rule implemented via TOML configuration
 ///
@@ -25,11 +25,7 @@ pub struct TomlFrameworkRule {
 
 impl TomlFrameworkRule {
     /// Create a new TOML framework rule from parsed rules
-    pub fn new(
-        name: String,
-        description: String,
-        rules: Vec<TomlRule>,
-    ) -> crate::Result<Self> {
+    pub fn new(name: String, description: String, rules: Vec<TomlRule>) -> crate::Result<Self> {
         let engine = RuleEngine::new(rules)?;
         Ok(Self {
             name,
@@ -54,9 +50,10 @@ impl TomlFrameworkRule {
 #[async_trait]
 impl FrameworkRule for TomlFrameworkRule {
     async fn apply(&self, graph: &ModuleGraph) -> fob::Result<()> {
-        let modules = graph.modules().await.map_err(|e| {
-            fob::Error::InvalidConfig(format!("Failed to get modules: {}", e))
-        })?;
+        let modules = graph
+            .modules()
+            .await
+            .map_err(|e| fob::Error::InvalidConfig(format!("Failed to get modules: {}", e)))?;
 
         // Apply rules using callback pattern for graph mutation
         self.engine
@@ -77,17 +74,15 @@ impl FrameworkRule for TomlFrameworkRule {
     fn name(&self) -> &'static str {
         // Leak the string exactly once using OnceLock
         // This prevents memory leaks from repeated calls
-        self.leaked_name.get_or_init(|| {
-            Box::leak(self.name.clone().into_boxed_str())
-        })
+        self.leaked_name
+            .get_or_init(|| Box::leak(self.name.clone().into_boxed_str()))
     }
 
     fn description(&self) -> &'static str {
         // Leak the string exactly once using OnceLock
         // This prevents memory leaks from repeated calls
-        self.leaked_description.get_or_init(|| {
-            Box::leak(self.description.clone().into_boxed_str())
-        })
+        self.leaked_description
+            .get_or_init(|| Box::leak(self.description.clone().into_boxed_str()))
     }
 
     fn is_default(&self) -> bool {

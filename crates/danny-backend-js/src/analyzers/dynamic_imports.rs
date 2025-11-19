@@ -1,8 +1,8 @@
 //! Dynamic import analysis for code-splitting detection.
 
 use danny_core::types::DynamicImportInfo;
-use std::path::PathBuf;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 /// Analyzes dynamic imports for code-splitting opportunities
 pub struct DynamicImportAnalyzer;
@@ -36,10 +36,7 @@ impl DynamicImportAnalyzer {
         let mut grouped: HashMap<PathBuf, Vec<DynamicImportInfo>> = HashMap::new();
 
         for import in imports {
-            grouped
-                .entry(import.from.clone())
-                .or_default()
-                .push(import);
+            grouped.entry(import.from.clone()).or_default().push(import);
         }
 
         grouped
@@ -64,14 +61,12 @@ mod tests {
 
     #[test]
     fn test_extract_dynamic_imports() {
-        let imports = vec![
-            (
-                PathBuf::from("app.ts"),
-                PathBuf::from("dashboard.ts"),
-                "./dashboard".into(),
-                false,
-            ),
-        ];
+        let imports = vec![(
+            PathBuf::from("app.ts"),
+            PathBuf::from("dashboard.ts"),
+            "./dashboard".into(),
+            false,
+        )];
 
         let dynamics = DynamicImportAnalyzer::extract_dynamic_imports(imports);
 
@@ -124,12 +119,8 @@ mod tests {
         sizes.insert(PathBuf::from("page1.ts"), 10000);
         sizes.insert(PathBuf::from("page2.ts"), 15000);
 
-        let potential = DynamicImportAnalyzer::calculate_lazy_loading_potential(
-            &imports,
-            &sizes,
-        );
+        let potential = DynamicImportAnalyzer::calculate_lazy_loading_potential(&imports, &sizes);
 
         assert_eq!(potential, 25000);
     }
 }
-

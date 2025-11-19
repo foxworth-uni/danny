@@ -57,8 +57,7 @@ impl NpmDependencyManager {
 impl DependencyManager for NpmDependencyManager {
     async fn parse<F: FileSystem>(&self, fs: &Arc<F>, path: &Path) -> Result<DependencyFile> {
         let content = fs.read_to_string(path).await?;
-        let pkg: PackageJson = serde_json::from_str(&content)
-            .map_err(|e| Error::Json(e))?;
+        let pkg: PackageJson = serde_json::from_str(&content).map_err(Error::Json)?;
 
         let mut dependencies = HashMap::new();
 
@@ -165,8 +164,7 @@ impl DependencyManager for NpmDependencyManager {
         use crate::update::FileUpdater;
 
         let content = fs.read_to_string(path).await?;
-        let mut pkg: serde_json::Value = serde_json::from_str(&content)
-            .map_err(|e| Error::Json(e))?;
+        let mut pkg: serde_json::Value = serde_json::from_str(&content).map_err(Error::Json)?;
         let mut applied = vec![];
 
         for update in updates {
@@ -198,8 +196,7 @@ impl DependencyManager for NpmDependencyManager {
 
         if !dry_run && !applied.is_empty() {
             // Pretty print with 2-space indentation (npm standard)
-            let formatted = serde_json::to_string_pretty(&pkg)
-                .map_err(|e| Error::Json(e))?;
+            let formatted = serde_json::to_string_pretty(&pkg).map_err(Error::Json)?;
             let updater = FileUpdater::new(false);
             updater.update_file(fs, path, formatted).await?;
         }
@@ -240,10 +237,12 @@ impl Default for NpmDependencyManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use danny_fs::NativeFileSystem;
+    use std::sync::Arc;
     use tempfile::TempDir;
 
-    #[test]
-    fn test_parse_package_json() {
+    #[tokio::test]
+    async fn test_parse_package_json() {
         let temp_dir = TempDir::new().unwrap();
         let package_json = temp_dir.path().join("package.json");
         std::fs::write(
@@ -264,7 +263,8 @@ mod tests {
         .unwrap();
 
         let manager = NpmDependencyManager::new();
-        let manifest = manager.parse(&package_json).unwrap();
+        let fs = Arc::new(NativeFileSystem::new(temp_dir.path()).unwrap());
+        let manifest = manager.parse(&fs, &package_json).await.unwrap();
 
         assert_eq!(manifest.name, "test");
         assert_eq!(manifest.version, "1.0.0");
@@ -275,4 +275,3 @@ mod tests {
         assert_eq!(deps[0].name, "react");
     }
 }
-

@@ -1,6 +1,6 @@
 //! npm/pnpm/yarn lockfile parsers
 
-use crate::{Error, LockfileParser, LockedDependencies, LockedPackage, Result};
+use crate::{Error, LockedDependencies, LockedPackage, LockfileParser, Result};
 use danny_fs::FileSystem;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -39,8 +39,7 @@ impl LockfileParser for NpmLockfileParser {
         path: &Path,
     ) -> Result<LockedDependencies> {
         let content = fs.read_to_string(path).await?;
-        let lock: PackageLock = serde_json::from_str(&content)
-            .map_err(|e| Error::Json(e))?;
+        let lock: PackageLock = serde_json::from_str(&content).map_err(Error::Json)?;
 
         let packages = lock
             .packages
@@ -123,8 +122,7 @@ impl LockfileParser for PnpmLockfileParser {
         path: &Path,
     ) -> Result<LockedDependencies> {
         let content = fs.read_to_string(path).await?;
-        let lock: PnpmLock = serde_yaml::from_str(&content)
-            .map_err(|e| Error::Yaml(e))?;
+        let lock: PnpmLock = serde_yaml::from_str(&content).map_err(Error::Yaml)?;
 
         // pnpm uses format: "/foo/1.0.0" as key
         let packages = lock
@@ -209,10 +207,12 @@ impl Default for YarnLockfileParser {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use danny_fs::NativeFileSystem;
+    use std::sync::Arc;
     use tempfile::TempDir;
 
-    #[test]
-    fn test_parse_package_lock() {
+    #[tokio::test]
+    async fn test_parse_package_lock() {
         let temp_dir = TempDir::new().unwrap();
         let lockfile = temp_dir.path().join("package-lock.json");
         std::fs::write(
@@ -237,10 +237,10 @@ mod tests {
         .unwrap();
 
         let parser = NpmLockfileParser::new();
-        let result = parser.parse_lockfile(&lockfile).unwrap();
+        let fs = Arc::new(NativeFileSystem::new(temp_dir.path()).unwrap());
+        let result = parser.parse_lockfile(&fs, &lockfile).await.unwrap();
 
         assert!(result.packages.contains_key("react"));
         assert_eq!(result.packages["react"].version, "18.0.0");
     }
 }
-

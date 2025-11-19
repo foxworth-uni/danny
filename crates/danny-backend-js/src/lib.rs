@@ -26,10 +26,10 @@
 //! # }
 //! ```
 
+pub mod analyzers;
 pub mod backend;
 pub mod file_discovery;
 pub mod toml_config;
-pub mod analyzers;
 
 pub use backend::JsBackend;
 pub use toml_config::DannyConfig;

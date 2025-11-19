@@ -20,13 +20,9 @@ pub const MAX_FILES_IN_FILES_MODE: usize = 1000;
 
 /// Validates that a path is within the project root (prevents path traversal)
 pub fn validate_path_within_root(path: &Path, root: &Path) -> Result<()> {
-    let canonical_path = path
-        .canonicalize()
-        .context("Failed to canonicalize path")?;
-    
-    let canonical_root = root
-        .canonicalize()
-        .context("Failed to canonicalize root")?;
+    let canonical_path = path.canonicalize().context("Failed to canonicalize path")?;
+
+    let canonical_root = root.canonicalize().context("Failed to canonicalize root")?;
 
     if !canonical_path.starts_with(&canonical_root) {
         return Err(Error::PathTraversal {
@@ -65,16 +61,13 @@ pub fn validate_entry_point(entry_point: &str, root: &Path) -> Result<PathBuf> {
 
     // Join with root and validate
     let full_path = root.join(entry_point);
-    
+
     // Validate path is within root
     validate_path_within_root(&full_path, root)?;
 
     // Check file exists (TOCTOU-safe: we'll open it immediately after)
     if !full_path.is_file() {
-        return Err(Error::EntryPointNotFound {
-            path: full_path,
-        }
-        .into());
+        return Err(Error::EntryPointNotFound { path: full_path }.into());
     }
 
     Ok(full_path)
@@ -101,4 +94,3 @@ pub fn validate_files_for_analysis(files: &[PathBuf], root: &Path) -> Result<()>
 
     Ok(())
 }
-

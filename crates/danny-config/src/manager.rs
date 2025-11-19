@@ -67,9 +67,7 @@ impl ConfigManager {
     pub async fn load_from(path: &Path) -> Result<Self, ConfigError> {
         // Create FileSystem scoped to config directory
         let config_dir = path.parent().unwrap_or_else(|| Path::new("."));
-        let fs = Arc::new(
-            NativeFileSystem::new(config_dir).map_err(|e| ConfigError::Io(e))?
-        );
+        let fs = Arc::new(NativeFileSystem::new(config_dir).map_err(ConfigError::Io)?);
 
         if !fs.exists(path).await.map_err(ConfigError::Io)? {
             return Err(ConfigError::ConfigNotFound(path.to_path_buf()));
@@ -105,7 +103,6 @@ impl<F: FileSystem> ConfigManager<F> {
 }
 
 impl ConfigManager {
-
     /// Initialize a new config file
     #[cfg(feature = "native-fs")]
     pub async fn init() -> Result<Self, ConfigError> {
@@ -117,9 +114,7 @@ impl ConfigManager {
     pub async fn init_at(path: &Path) -> Result<Self, ConfigError> {
         // Create FileSystem scoped to config directory
         let config_dir = path.parent().unwrap_or_else(|| Path::new("."));
-        let fs = Arc::new(
-            NativeFileSystem::new(config_dir).map_err(|e| ConfigError::Io(e))?
-        );
+        let fs = Arc::new(NativeFileSystem::new(config_dir).map_err(ConfigError::Io)?);
 
         // Create parent directory if it doesn't exist
         if let Some(parent) = path.parent() {
@@ -148,13 +143,19 @@ impl ConfigManager {
 
         // Write to temporary file first
         let temp_path = self.config_path.with_extension("toml.tmp");
-        self.fs.write(&temp_path, &toml_str).await.map_err(ConfigError::Io)?;
+        self.fs
+            .write(&temp_path, &toml_str)
+            .await
+            .map_err(ConfigError::Io)?;
 
         // Set permissions on temp file (sync operation, uses std::fs)
         set_config_permissions(&temp_path)?;
 
         // Atomic rename
-        self.fs.rename(&temp_path, &self.config_path).await.map_err(ConfigError::Io)?;
+        self.fs
+            .rename(&temp_path, &self.config_path)
+            .await
+            .map_err(ConfigError::Io)?;
 
         Ok(())
     }
@@ -268,11 +269,7 @@ impl ConfigManager {
 
     /// List enabled projects only
     pub fn list_enabled_projects(&self) -> Vec<&Project> {
-        self.config
-            .projects
-            .iter()
-            .filter(|p| p.enabled)
-            .collect()
+        self.config.projects.iter().filter(|p| p.enabled).collect()
     }
 }
 
@@ -329,7 +326,9 @@ mod tests {
         assert_eq!(manager.config.projects[0].id, "test-project");
 
         // Should persist
-        let loaded = ConfigManager::load_from(&manager.config_path).await.unwrap();
+        let loaded = ConfigManager::load_from(&manager.config_path)
+            .await
+            .unwrap();
         assert_eq!(loaded.config.projects.len(), 1);
     }
 
@@ -377,7 +376,10 @@ mod tests {
         manager.add_project(project).await.unwrap();
 
         let now = Utc::now();
-        manager.update_last_checked("test-project", now).await.unwrap();
+        manager
+            .update_last_checked("test-project", now)
+            .await
+            .unwrap();
 
         let project = manager.get_project("test-project").unwrap();
         assert!(project.last_checked.is_some());

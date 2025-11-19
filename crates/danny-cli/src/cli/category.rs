@@ -1,5 +1,5 @@
-use danny_core::{AnalysisCapabilities, AnalysisMode, Category};
 use danny_config::AnalysisTarget;
+use danny_core::{AnalysisCapabilities, AnalysisMode, Category};
 
 /// Validates requested categories against available capabilities
 pub struct CategoryValidator {
@@ -56,7 +56,7 @@ impl CategoryValidator {
                     .iter()
                     .copied()
                     .collect()
-            },
+            }
             AnalysisMode::Files => vec![
                 Category::Symbols,
                 Category::Quality,
@@ -95,18 +95,6 @@ pub enum CategoryValidation {
 }
 
 impl CategoryValidation {
-    /// Get the categories to run (if any)
-    pub fn categories(&self) -> Option<Vec<Category>> {
-        match self {
-            CategoryValidation::UseDefaults { categories }
-            | CategoryValidation::AllAvailable { categories }
-            | CategoryValidation::PartiallyAvailable { available: categories, .. } => {
-                Some(categories.clone())
-            }
-            CategoryValidation::NoneAvailable { .. } => None,
-        }
-    }
-
     /// Check if this requires user confirmation
     pub fn requires_confirmation(&self) -> bool {
         matches!(self, CategoryValidation::PartiallyAvailable { .. })
@@ -168,9 +156,9 @@ mod tests {
 
         let validator = CategoryValidator::new(&target);
         let result = validator.validate(&[
-            Category::Symbols,  // Available
-            Category::Files,    // Not available
-            Category::Quality,  // Available
+            Category::Symbols, // Available
+            Category::Files,   // Not available
+            Category::Quality, // Available
         ]);
 
         match result {
@@ -228,4 +216,3 @@ mod tests {
         }
     }
 }
-

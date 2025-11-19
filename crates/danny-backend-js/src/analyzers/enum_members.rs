@@ -1,10 +1,10 @@
 //! Enum member analysis - converts Fob's enum member data to Danny findings.
 
-use danny_core::{Finding, EnumValue, SymbolSpan};
+use danny_core::{EnumValue, Finding, SymbolSpan};
 use fob::graph::{ModuleGraph, UnusedSymbol};
 use std::collections::HashMap;
 use std::hash::BuildHasher;
-use std::path::PathBuf;
+use std::path::Path;
 
 /// Analyzer for enum member findings.
 pub struct EnumMemberAnalyzer;
@@ -69,12 +69,9 @@ impl EnumMemberAnalyzer {
     }
 
     /// Convert Fob's SymbolSpan to Danny's SymbolSpan.
-    fn convert_symbol_span(
-        span: &fob::graph::SymbolSpan,
-        file: &PathBuf,
-    ) -> SymbolSpan {
+    fn convert_symbol_span(span: &fob::graph::SymbolSpan, file: &Path) -> SymbolSpan {
         SymbolSpan {
-            file: file.clone(),
+            file: file.to_path_buf(),
             line: span.line,
             column: span.column,
             offset: span.offset,
@@ -96,8 +93,7 @@ impl EnumMemberAnalyzer {
     }
 
     /// Check if a path is virtual (should be filtered).
-    fn is_virtual_path(path: &PathBuf) -> bool {
+    fn is_virtual_path(path: &Path) -> bool {
         path.to_string_lossy().starts_with("virtual:")
     }
 }
-

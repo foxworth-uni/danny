@@ -49,7 +49,7 @@ pub mod version;
 
 // Re-export main types and traits
 pub use error::{Error, Result};
-pub use traits::{DependencyManager, LockfileParser, LockedDependencies, LockedPackage};
+pub use traits::{DependencyManager, LockedDependencies, LockedPackage, LockfileParser};
 pub use types::{
     AppliedUpdate, Dependency, DependencyFile, DependencyType, DependencyUpdate, Ecosystem,
     UpdateResult, VersionReq,

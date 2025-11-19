@@ -5,11 +5,12 @@
 use danny_deps::{
     CargoDependencyManager, DependencyManager, DependencyType, Ecosystem, UnifiedDependencyManager,
 };
-use std::path::Path;
+use danny_fs::NativeFileSystem;
+use std::sync::Arc;
 use tempfile::TempDir;
 
-#[test]
-fn test_parse_and_update_roundtrip() {
+#[tokio::test]
+async fn test_parse_and_update_roundtrip() {
     let temp_dir = TempDir::new().unwrap();
     let cargo_toml = temp_dir.path().join("Cargo.toml");
 
@@ -29,9 +30,10 @@ tokio = { version = "1.0", features = ["macros"] }
     .unwrap();
 
     let manager = CargoDependencyManager::new();
+    let fs = Arc::new(NativeFileSystem::new(temp_dir.path()).unwrap());
 
     // Parse it
-    let manifest = manager.parse(&cargo_toml).unwrap();
+    let manifest = manager.parse(&fs, &cargo_toml).await.unwrap();
     assert_eq!(manifest.name, "test");
     assert_eq!(manifest.dependencies.len(), 1);
 
@@ -47,23 +49,23 @@ tokio = { version = "1.0", features = ["macros"] }
     }];
 
     // Dry run first
-    let result = manager.update(&cargo_toml, &updates, true).unwrap();
+    let result = manager.update(&fs, &cargo_toml, &updates, true).await.unwrap();
     assert_eq!(result.updates.len(), 1);
     assert_eq!(result.updates[0].package, "serde");
     assert_eq!(result.updates[0].new_version, "1.0.210");
 
     // Actually update
-    let result = manager.update(&cargo_toml, &updates, false).unwrap();
+    let result = manager.update(&fs, &cargo_toml, &updates, false).await.unwrap();
     assert_eq!(result.updates.len(), 1);
 
     // Parse again to verify
-    let manifest2 = manager.parse(&cargo_toml).unwrap();
+    let manifest2 = manager.parse(&fs, &cargo_toml).await.unwrap();
     let serde_dep = manifest2.find_dependency("serde").unwrap();
     assert_eq!(serde_dep.version_req.raw, "1.0.210");
 }
 
-#[test]
-fn test_workspace_detection() {
+#[tokio::test]
+async fn test_workspace_detection() {
     let temp_dir = TempDir::new().unwrap();
     let root_cargo = temp_dir.path().join("Cargo.toml");
 
@@ -102,12 +104,13 @@ version = "0.1.0"
     .unwrap();
 
     let manager = CargoDependencyManager::new();
+    let fs = Arc::new(NativeFileSystem::new(temp_dir.path()).unwrap());
 
     // Check if root is workspace
-    assert!(manager.is_workspace_root(&root_cargo).unwrap());
+    assert!(manager.is_workspace_root(&fs, &root_cargo).await.unwrap());
 
     // Find members
-    let members = manager.find_workspace_members(temp_dir.path()).unwrap();
+    let members = manager.find_workspace_members(&fs, temp_dir.path()).await.unwrap();
     assert_eq!(members.len(), 2);
 }
 
@@ -186,4 +189,3 @@ fn test_version_comparison_edge_cases() {
         UpdateType::None
     );
 }
-

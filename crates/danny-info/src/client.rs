@@ -7,7 +7,13 @@ use std::sync::Arc;
 use std::time::Duration;
 
 /// Rate limiter for a specific registry
-pub type RegistryRateLimiter = Arc<RateLimiter<governor::state::NotKeyed, governor::state::InMemoryState, governor::clock::DefaultClock>>;
+pub type RegistryRateLimiter = Arc<
+    RateLimiter<
+        governor::state::NotKeyed,
+        governor::state::InMemoryState,
+        governor::clock::DefaultClock,
+    >,
+>;
 
 /// HTTP client wrapper for making registry and API requests with rate limiting
 #[derive(Debug, Clone)]

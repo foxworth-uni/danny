@@ -1,15 +1,12 @@
 //! Tests for human formatter category grouping and output.
 
 use super::*;
-use danny_core::{
-    AnalysisResult, Category, Finding,
-};
 use danny_core::types::{
-    Statistics, ExportKind, SymbolKind, SymbolSpan, ClassMemberKind,
-    NpmDependencyType, SourceLocation, CircularDependency as CircularDep,
-    CodeSmellType, SmellSeverity, CodeSmellDetails, UnreachableModuleMetadata,
-    SafetyAssessment,
+    CircularDependency as CircularDep, ClassMemberKind, CodeSmellDetails, CodeSmellType,
+    ExportKind, NpmDependencyType, SafetyAssessment, SmellSeverity, SourceLocation, Statistics,
+    SymbolKind, SymbolSpan, UnreachableModuleMetadata,
 };
+use danny_core::{AnalysisResult, Category, Finding};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -63,12 +60,18 @@ fn test_category_grouping() {
     let mut findings_by_category: HashMap<Category, Vec<&Finding>> = HashMap::new();
     for finding in &result.findings {
         let category = finding.category();
-        findings_by_category.entry(category).or_default().push(finding);
+        findings_by_category
+            .entry(category)
+            .or_default()
+            .push(finding);
     }
 
     // Verify grouping
     assert_eq!(findings_by_category.get(&Category::Files).unwrap().len(), 1);
-    assert_eq!(findings_by_category.get(&Category::Exports).unwrap().len(), 1);
+    assert_eq!(
+        findings_by_category.get(&Category::Exports).unwrap().len(),
+        1
+    );
     assert_eq!(findings_by_category.get(&Category::Types).unwrap().len(), 1);
 }
 
@@ -177,7 +180,10 @@ fn test_empty_category_handling() {
     let mut findings_by_category: HashMap<Category, Vec<&Finding>> = HashMap::new();
     for finding in &result.findings {
         let category = finding.category();
-        findings_by_category.entry(category).or_default().push(finding);
+        findings_by_category
+            .entry(category)
+            .or_default()
+            .push(finding);
     }
 
     // Verify only Files category has findings

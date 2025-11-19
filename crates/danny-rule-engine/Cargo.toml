@@ -41,11 +41,11 @@ fob.workspace = true
 tokio = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-tokio = { version = "1.42", features = ["sync", "macros"] }
+tokio = { version = "1.48.0", features = ["sync", "macros"] }
 
 [dev-dependencies]
 tempfile.workspace = true
-criterion = "0.5"
+criterion = "0.7.0"
 
 # TODO: Add benchmarks
 # [[bench]]

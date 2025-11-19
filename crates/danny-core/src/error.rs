@@ -85,10 +85,7 @@ pub enum Error {
 
     /// Circular dependency cycle too deep
     #[error("Circular dependency depth {depth} exceeds max {max_allowed}")]
-    CycleTooDeep {
-        depth: usize,
-        max_allowed: usize,
-    },
+    CycleTooDeep { depth: usize, max_allowed: usize },
 
     /// Path traversal attempt detected
     #[error("Path traversal: {attempted_path:?} outside {project_root:?}")]
@@ -99,10 +96,7 @@ pub enum Error {
 
     /// Invalid path
     #[error("Invalid path {path:?}: {reason}")]
-    InvalidPath {
-        path: PathBuf,
-        reason: String,
-    },
+    InvalidPath { path: PathBuf, reason: String },
 
     /// User cancelled the operation
     #[error("User cancelled operation")]

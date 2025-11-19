@@ -23,4 +23,3 @@ pub fn find_nearest_package_json(start: &Path) -> Result<Option<PathBuf>> {
 
     Ok(None)
 }
-

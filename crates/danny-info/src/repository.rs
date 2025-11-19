@@ -28,14 +28,13 @@ pub fn parse_repository_url(url_str: &str) -> Result<RepositoryUrl> {
     }
 
     // Parse as normal URL
-    let url = Url::parse(url_str).map_err(|_| {
-        Error::InvalidRepositoryUrl(format!("Could not parse URL: {}", url_str))
-    })?;
+    let url = Url::parse(url_str)
+        .map_err(|_| Error::InvalidRepositoryUrl(format!("Could not parse URL: {}", url_str)))?;
 
     // Check if it's GitHub
-    let host = url.host_str().ok_or_else(|| {
-        Error::InvalidRepositoryUrl(format!("No host found in URL: {}", url_str))
-    })?;
+    let host = url
+        .host_str()
+        .ok_or_else(|| Error::InvalidRepositoryUrl(format!("No host found in URL: {}", url_str)))?;
 
     if !host.ends_with("github.com") {
         return Err(Error::UnsupportedRepositoryHost(host.to_string()));
@@ -105,9 +104,7 @@ fn parse_ssh_url(ssh_part: &str) -> Result<RepositoryUrl> {
 pub fn extract_repo_from_json(value: &serde_json::Value) -> Option<String> {
     match value {
         serde_json::Value::String(s) => Some(s.clone()),
-        serde_json::Value::Object(obj) => {
-            obj.get("url").and_then(|v| v.as_str()).map(String::from)
-        }
+        serde_json::Value::Object(obj) => obj.get("url").and_then(|v| v.as_str()).map(String::from),
         _ => None,
     }
 }

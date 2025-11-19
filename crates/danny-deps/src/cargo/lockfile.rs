@@ -1,6 +1,6 @@
 //! Cargo.lock parser using cargo_lock crate
 
-use crate::{Error, LockfileParser, LockedDependencies, LockedPackage, Result};
+use crate::{Error, LockedDependencies, LockedPackage, LockfileParser, Result};
 use cargo_lock::Lockfile;
 use danny_fs::FileSystem;
 use std::path::Path;
@@ -25,8 +25,7 @@ impl LockfileParser for CargoLockfileParser {
     ) -> Result<LockedDependencies> {
         // cargo_lock::Lockfile::load requires a Path, so we use the path directly
         // The FileSystem abstraction ensures path validation
-        let lockfile = Lockfile::load(path)
-            .map_err(|e| Error::CargoLock(e.to_string()))?;
+        let lockfile = Lockfile::load(path).map_err(|e| Error::CargoLock(e.to_string()))?;
 
         let packages = lockfile
             .packages
@@ -49,8 +48,7 @@ impl LockfileParser for CargoLockfileParser {
     async fn verify_integrity<F: FileSystem>(&self, _fs: &Arc<F>, path: &Path) -> Result<()> {
         // cargo_lock crate handles checksum verification automatically
         // Lockfile::load validates checksums during parsing
-        let _lockfile = Lockfile::load(path)
-            .map_err(|e| Error::CargoLock(e.to_string()))?;
+        let _lockfile = Lockfile::load(path).map_err(|e| Error::CargoLock(e.to_string()))?;
         Ok(())
     }
 }
@@ -64,10 +62,12 @@ impl Default for CargoLockfileParser {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use danny_fs::NativeFileSystem;
+    use std::sync::Arc;
     use tempfile::TempDir;
 
-    #[test]
-    fn test_parse_lockfile() {
+    #[tokio::test]
+    async fn test_parse_lockfile() {
         let temp_dir = TempDir::new().unwrap();
         let lockfile_path = temp_dir.path().join("Cargo.lock");
 
@@ -86,10 +86,10 @@ version = "0.1.0"
         .unwrap();
 
         let parser = CargoLockfileParser::new();
-        let result = parser.parse_lockfile(&lockfile_path);
+        let fs = Arc::new(NativeFileSystem::new(temp_dir.path()).unwrap());
+        let result = parser.parse_lockfile(&fs, &lockfile_path).await;
 
         // Should parse successfully (even if minimal)
         assert!(result.is_ok());
     }
 }
-

@@ -1,11 +1,11 @@
 //! Code quality analyzer - detects code smells using Fob's symbol data.
 
-use danny_core::Finding;
-use danny_core::types::{CodeSmellType, SmellSeverity, CodeSmellDetails};
 use crate::toml_config::CodeQualityConfig;
+use danny_core::types::{CodeSmellDetails, CodeSmellType, SmellSeverity};
+use danny_core::Finding;
 use fob::graph::{ModuleGraph, SymbolKind, UnusedSymbol};
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 /// Virtual path prefix used by bundlers for synthetic modules.
@@ -416,6 +416,7 @@ impl QualityAnalyzer {
     /// methods while maintaining type safety and clarity. The use of closures
     /// allows each caller to specify how to extract metrics and format messages
     /// without duplicating the common filtering and error handling logic.
+    #[allow(clippy::too_many_arguments)]
     async fn detect_metric_violation<F, M>(
         graph: &ModuleGraph,
         _config: &CodeQualityConfig,
@@ -450,7 +451,7 @@ impl QualityAnalyzer {
                 .await
                 .map_err(|e| QualityAnalysisError::ModuleAccess {
                     module_id: format!("{:?}", symbol_info.module_id),
-                    source: Box::new(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())),
+                    source: Box::new(std::io::Error::other(e.to_string())),
                 })?
                 .ok_or_else(|| {
                     QualityAnalysisError::ModuleNotFound(format!("{:?}", symbol_info.module_id))
@@ -543,6 +544,7 @@ impl QualityAnalyzer {
     /// - `recommendation`: Suggested fix or best practice
     /// - `current_value`: The measured metric value (e.g., actual line count)
     /// - `recommended_threshold`: The configured threshold that was exceeded
+    #[allow(clippy::too_many_arguments)]
     fn create_smell_finding(
         smell_type: CodeSmellType,
         location: PathBuf,
@@ -591,7 +593,7 @@ impl QualityAnalyzer {
     /// let virtual_path = PathBuf::from("virtual:rolldown-plugin-node-modules");
     /// // assert!(QualityAnalyzer::is_virtual_path(&virtual_path)); // private method
     /// ```
-    fn is_virtual_path(path: &PathBuf) -> bool {
+    fn is_virtual_path(path: &Path) -> bool {
         path.to_string_lossy().starts_with(VIRTUAL_PATH_PREFIX)
     }
 }
@@ -628,13 +630,17 @@ mod tests {
     /// Test error type formatting to ensure user-friendly messages.
     #[test]
     fn test_error_formatting() {
-        let symbol_error = QualityAnalysisError::SymbolAccess("Database connection lost".to_string());
+        let symbol_error =
+            QualityAnalysisError::SymbolAccess("Database connection lost".to_string());
         let error_msg = format!("{}", symbol_error);
         assert_eq!(error_msg, "Failed to get symbols: Database connection lost");
 
         let module_error = QualityAnalysisError::ModuleAccess {
             module_id: "module_123".to_string(),
-            source: Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "File not found")),
+            source: Box::new(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "File not found",
+            )),
         };
         let error_msg = format!("{}", module_error);
         assert!(error_msg.starts_with("Failed to get module module_123:"));
@@ -693,4 +699,3 @@ mod tests {
     // These should be placed in the integration tests directory with proper
     // test fixtures. The tests above cover unit-testable components.
 }
-

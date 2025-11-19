@@ -4,7 +4,7 @@
 //! against the module graph to find files that are never imported.
 
 use danny_core::{AnalysisOptions, Finding, Result};
-use danny_fs::{FileSystem, DiscoveryOptions as FsDiscoveryOptions};
+use danny_fs::{DiscoveryOptions as FsDiscoveryOptions, FileSystem};
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -38,7 +38,7 @@ impl Default for DiscoveryConfig {
             ],
             ignore_patterns: vec![],
             max_file_size: Some(10 * 1024 * 1024), // 10MB default
-            follow_symlinks: false, // Security: don't follow symlinks by default
+            follow_symlinks: false,                // Security: don't follow symlinks by default
         }
     }
 }
@@ -92,7 +92,6 @@ pub async fn discover_source_files<F: FileSystem>(
         message: format!("File discovery failed: {}", e),
     })
 }
-
 
 /// Validates that the project root is safe to scan.
 ///
@@ -196,9 +195,8 @@ pub async fn find_unreachable_files(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::TempDir;
     use std::fs;
-
+    use tempfile::TempDir;
 
     #[test]
     fn test_validate_project_root_rejects_root() {

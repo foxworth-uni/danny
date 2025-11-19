@@ -22,7 +22,7 @@ impl CargoWorkspace {
                 let content = std::fs::read_to_string(&manifest_path)?;
                 let doc = content
                     .parse::<DocumentMut>()
-                    .map_err(|e| crate::Error::TomlEdit(e))?;
+                    .map_err(crate::Error::TomlEdit)?;
 
                 if doc.get("workspace").is_some() {
                     return Ok(Some(current));
@@ -50,7 +50,7 @@ impl CargoWorkspace {
         let content = fs.read_to_string(&manifest_path).await?;
         let doc = content
             .parse::<DocumentMut>()
-            .map_err(|e| crate::Error::TomlEdit(e))?;
+            .map_err(crate::Error::TomlEdit)?;
 
         let workspace = doc
             .get("workspace")
@@ -81,7 +81,7 @@ impl CargoWorkspace {
         let content = fs.read_to_string(&manifest_path).await?;
         let doc = content
             .parse::<DocumentMut>()
-            .map_err(|e| crate::Error::TomlEdit(e))?;
+            .map_err(crate::Error::TomlEdit)?;
 
         Ok(doc.get("workspace").is_some())
     }
@@ -90,12 +90,15 @@ impl CargoWorkspace {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use danny_fs::NativeFileSystem;
+    use std::sync::Arc;
     use tempfile::TempDir;
 
-    #[test]
-    fn test_is_workspace_root() {
+    #[tokio::test]
+    async fn test_is_workspace_root() {
         let temp_dir = TempDir::new().unwrap();
         let cargo_toml = temp_dir.path().join("Cargo.toml");
+        let fs = Arc::new(NativeFileSystem::new(temp_dir.path()).unwrap());
 
         // Not a workspace
         std::fs::write(
@@ -107,7 +110,9 @@ version = "0.1.0"
 "#,
         )
         .unwrap();
-        assert!(!CargoWorkspace::is_workspace_root(temp_dir.path()).unwrap());
+        assert!(!CargoWorkspace::is_workspace_root(&fs, temp_dir.path())
+            .await
+            .unwrap());
 
         // Is a workspace
         std::fs::write(
@@ -118,13 +123,16 @@ members = ["crate1"]
 "#,
         )
         .unwrap();
-        assert!(CargoWorkspace::is_workspace_root(temp_dir.path()).unwrap());
+        assert!(CargoWorkspace::is_workspace_root(&fs, temp_dir.path())
+            .await
+            .unwrap());
     }
 
-    #[test]
-    fn test_get_members() {
+    #[tokio::test]
+    async fn test_get_members() {
         let temp_dir = TempDir::new().unwrap();
         let cargo_toml = temp_dir.path().join("Cargo.toml");
+        let fs = Arc::new(NativeFileSystem::new(temp_dir.path()).unwrap());
 
         std::fs::write(
             &cargo_toml,
@@ -135,10 +143,11 @@ members = ["crate1", "crate2"]
         )
         .unwrap();
 
-        let members = CargoWorkspace::get_members(temp_dir.path()).unwrap();
+        let members = CargoWorkspace::get_members(&fs, temp_dir.path())
+            .await
+            .unwrap();
         assert_eq!(members.len(), 2);
         assert!(members[0].ends_with("crate1/Cargo.toml"));
         assert!(members[1].ends_with("crate2/Cargo.toml"));
     }
 }
-

@@ -68,7 +68,7 @@ pub struct EntryPointConfig {
 }
 
 /// Analysis behavior configuration.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct AnalysisConfig {
     /// Follow external (npm) dependencies.
     #[serde(default)]
@@ -81,16 +81,6 @@ pub struct AnalysisConfig {
     /// Number of parallel workers (None = auto).
     #[serde(default)]
     pub workers: Option<usize>,
-}
-
-impl Default for AnalysisConfig {
-    fn default() -> Self {
-        Self {
-            follow_external: false,
-            max_depth: None,
-            workers: None,
-        }
-    }
 }
 
 /// Code quality analysis configuration.
@@ -395,7 +385,10 @@ mod tests {
         config = CodeQualityConfig::default();
         config.max_class_lines = 0;
         assert!(config.validate().is_err());
-        assert_eq!(config.validate().unwrap_err(), "max_class_lines must be > 0");
+        assert_eq!(
+            config.validate().unwrap_err(),
+            "max_class_lines must be > 0"
+        );
 
         config = CodeQualityConfig::default();
         config.max_complexity = 0;
@@ -410,7 +403,10 @@ mod tests {
         config = CodeQualityConfig::default();
         config.max_message_chain = 0;
         assert!(config.validate().is_err());
-        assert_eq!(config.validate().unwrap_err(), "max_message_chain must be > 0");
+        assert_eq!(
+            config.validate().unwrap_err(),
+            "max_message_chain must be > 0"
+        );
 
         config = CodeQualityConfig::default();
         config.max_methods = 0;
@@ -425,7 +421,10 @@ mod tests {
         config = CodeQualityConfig::default();
         config.max_return_count = 0;
         assert!(config.validate().is_err());
-        assert_eq!(config.validate().unwrap_err(), "max_return_count must be > 0");
+        assert_eq!(
+            config.validate().unwrap_err(),
+            "max_return_count must be > 0"
+        );
     }
 
     /// Test validation catches unreasonably large values.

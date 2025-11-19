@@ -27,11 +27,27 @@ pub fn filter_findings_with_tracking(
             Finding::Dependency { from, .. } => Some(from),
             Finding::Pattern { location, .. } => Some(location),
             Finding::Framework { .. } => None,
-            Finding::UnusedExport { module, explanation: _, .. } => Some(module),
+            Finding::UnusedExport {
+                module,
+                explanation: _,
+                ..
+            } => Some(module),
             Finding::UnreachableModule { path, .. } => Some(path),
-            Finding::UnreachableFile { path, explanation: _, .. } => Some(path),
-            Finding::UnusedSymbol { module, explanation: _, .. } => Some(module),
-            Finding::FrameworkExport { module, explanation: _, .. } => Some(module),
+            Finding::UnreachableFile {
+                path,
+                explanation: _,
+                ..
+            } => Some(path),
+            Finding::UnusedSymbol {
+                module,
+                explanation: _,
+                ..
+            } => Some(module),
+            Finding::FrameworkExport {
+                module,
+                explanation: _,
+                ..
+            } => Some(module),
             Finding::DynamicImport(info) => Some(&info.from),
             Finding::CircularDependency(circ) => circ.cycle.first(),
             Finding::UnusedPrivateClassMember { module, .. } => Some(module),
@@ -116,4 +132,3 @@ pub fn recalculate_statistics(result: &mut danny_core::AnalysisResult) {
     result.statistics.unreachable_modules_count = unreachable_modules;
     result.statistics.framework_exports_count = framework_exports;
 }
-

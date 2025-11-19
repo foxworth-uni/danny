@@ -6,9 +6,9 @@
 //! - Dynamic import targets
 //! - Configuration file patterns
 
+use danny_core::types::SafetyAssessment;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
-use danny_core::types::SafetyAssessment;
 
 /// Analyzes modules for side effects and deletion safety
 pub struct SideEffectAnalyzer;
@@ -39,15 +39,11 @@ impl SideEffectAnalyzer {
         }
 
         if dynamic_imports.contains(path) {
-            return SafetyAssessment::ReviewCarefully(
-                "Dynamically imported".into()
-            );
+            return SafetyAssessment::ReviewCarefully("Dynamically imported".into());
         }
 
         if has_side_effects {
-            return SafetyAssessment::ReviewCarefully(
-                "Module has side effects".into()
-            );
+            return SafetyAssessment::ReviewCarefully("Module has side effects".into());
         }
 
         SafetyAssessment::SafeToDelete
@@ -68,9 +64,7 @@ impl SideEffectAnalyzer {
 
         path.file_name()
             .and_then(|n| n.to_str())
-            .map(|name| {
-                CONFIG_FILES.iter().any(|cfg| name.contains(cfg))
-            })
+            .map(|name| CONFIG_FILES.iter().any(|cfg| name.contains(cfg)))
             .unwrap_or(false)
     }
 }
@@ -83,8 +77,8 @@ mod tests {
     fn test_safe_to_delete_no_side_effects() {
         let path = PathBuf::from("src/utils.ts");
         let assessment = SideEffectAnalyzer::assess_safety(
-            false,  // no side effects
-            false,  // not entry
+            false, // no side effects
+            false, // not entry
             &path,
             &HashSet::new(),
         );
@@ -97,7 +91,7 @@ mod tests {
         let path = PathBuf::from("src/index.ts");
         let assessment = SideEffectAnalyzer::assess_safety(
             false,
-            true,  // is entry
+            true, // is entry
             &path,
             &HashSet::new(),
         );
@@ -109,7 +103,7 @@ mod tests {
     fn test_review_carefully_side_effects() {
         let path = PathBuf::from("src/setup.ts");
         let assessment = SideEffectAnalyzer::assess_safety(
-            true,  // has side effects
+            true, // has side effects
             false,
             &path,
             &HashSet::new(),
@@ -124,12 +118,7 @@ mod tests {
         let mut dynamic_imports = HashSet::new();
         dynamic_imports.insert(path.clone());
 
-        let assessment = SideEffectAnalyzer::assess_safety(
-            false,
-            false,
-            &path,
-            &dynamic_imports,
-        );
+        let assessment = SideEffectAnalyzer::assess_safety(false, false, &path, &dynamic_imports);
 
         assert!(matches!(assessment, SafetyAssessment::ReviewCarefully(_)));
     }
@@ -137,22 +126,24 @@ mod tests {
     #[test]
     fn test_unsafe_config_file() {
         let path = PathBuf::from("package.json");
-        let assessment = SideEffectAnalyzer::assess_safety(
-            false,
-            false,
-            &path,
-            &HashSet::new(),
-        );
+        let assessment = SideEffectAnalyzer::assess_safety(false, false, &path, &HashSet::new());
 
         assert!(matches!(assessment, SafetyAssessment::Unsafe(_)));
     }
 
     #[test]
     fn test_is_config_file_detection() {
-        assert!(SideEffectAnalyzer::is_config_file(Path::new("package.json")));
-        assert!(SideEffectAnalyzer::is_config_file(Path::new("tsconfig.json")));
-        assert!(SideEffectAnalyzer::is_config_file(Path::new("next.config.js")));
-        assert!(!SideEffectAnalyzer::is_config_file(Path::new("src/config.ts")));
+        assert!(SideEffectAnalyzer::is_config_file(Path::new(
+            "package.json"
+        )));
+        assert!(SideEffectAnalyzer::is_config_file(Path::new(
+            "tsconfig.json"
+        )));
+        assert!(SideEffectAnalyzer::is_config_file(Path::new(
+            "next.config.js"
+        )));
+        assert!(!SideEffectAnalyzer::is_config_file(Path::new(
+            "src/config.ts"
+        )));
     }
 }
-

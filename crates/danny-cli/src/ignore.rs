@@ -48,14 +48,6 @@ impl IgnorePatternBuilder {
         self
     }
 
-    /// Add a custom ignore pattern.
-    pub fn add_pattern(mut self, pattern: &str) -> Result<Self> {
-        // Validate pattern
-        Glob::new(pattern)?;
-        self.patterns.push(pattern.to_string());
-        Ok(self)
-    }
-
     /// Add multiple custom ignore patterns.
     pub fn add_patterns<I>(mut self, patterns: I) -> Result<Self>
     where
@@ -68,12 +60,6 @@ impl IgnorePatternBuilder {
             self.patterns.push(pattern.as_ref().to_string());
         }
         Ok(self)
-    }
-
-    /// Build the final GlobSet (legacy method for backwards compatibility).
-    pub fn build(self) -> Result<GlobSet> {
-        let (glob_set, _) = self.build_with_metadata()?;
-        Ok(glob_set)
     }
 
     /// Build the GlobSet along with pattern metadata for tracking.
@@ -89,10 +75,9 @@ impl IgnorePatternBuilder {
         }
 
         // Build glob set with pattern tracking
-        for (idx, pattern) in self.patterns.iter().enumerate() {
+        for pattern in self.patterns.iter() {
             builder.add(Glob::new(pattern)?);
             pattern_infos.push(PatternInfo {
-                index: idx,
                 pattern: pattern.clone(),
             });
         }
@@ -110,16 +95,8 @@ impl Default for IgnorePatternBuilder {
 /// Metadata about an ignore pattern.
 #[derive(Debug, Clone)]
 pub struct PatternInfo {
-    /// Index in the GlobSet.
-    pub index: usize,
-
     /// The pattern string.
     pub pattern: String,
-}
-
-/// Check if a path should be ignored based on the given GlobSet.
-pub fn should_ignore(path: &Path, ignore_set: &GlobSet) -> bool {
-    ignore_set.is_match(path)
 }
 
 /// Matches a path and returns the matched pattern string, if any.
@@ -240,88 +217,64 @@ mod tests {
 
     #[test]
     fn test_default_patterns_match_node_modules() {
-        let ignore_set = IgnorePatternBuilder::new()
-            .build()
+        let (ignore_set, _) = IgnorePatternBuilder::new()
+            .build_with_metadata()
             .expect("Failed to build ignore set");
 
-        assert!(should_ignore(
-            &PathBuf::from("node_modules/react/index.js"),
-            &ignore_set
-        ));
-        assert!(should_ignore(
-            &PathBuf::from("project/node_modules/lodash/index.js"),
-            &ignore_set
-        ));
+        assert!(ignore_set.is_match(&PathBuf::from("node_modules/react/index.js")));
+        assert!(ignore_set.is_match(&PathBuf::from("project/node_modules/lodash/index.js")));
     }
 
     #[test]
     fn test_default_patterns_match_build_dirs() {
-        let ignore_set = IgnorePatternBuilder::new()
-            .build()
+        let (ignore_set, _) = IgnorePatternBuilder::new()
+            .build_with_metadata()
             .expect("Failed to build ignore set");
 
-        assert!(should_ignore(
-            &PathBuf::from(".next/static/foo.js"),
-            &ignore_set
-        ));
-        assert!(should_ignore(&PathBuf::from("dist/bundle.js"), &ignore_set));
-        assert!(should_ignore(
-            &PathBuf::from("build/output.js"),
-            &ignore_set
-        ));
+        assert!(ignore_set.is_match(&PathBuf::from(".next/static/foo.js")));
+        assert!(ignore_set.is_match(&PathBuf::from("dist/bundle.js")));
+        assert!(ignore_set.is_match(&PathBuf::from("build/output.js")));
     }
 
     #[test]
     fn test_custom_patterns() {
-        let ignore_set = IgnorePatternBuilder::new()
-            .add_pattern("**/*.test.js")
+        let (ignore_set, _) = IgnorePatternBuilder::new()
+            .add_patterns(&["**/*.test.js"])
             .expect("Failed to add pattern")
-            .build()
+            .build_with_metadata()
             .expect("Failed to build ignore set");
 
-        assert!(should_ignore(
-            &PathBuf::from("src/foo.test.js"),
-            &ignore_set
-        ));
-        assert!(!should_ignore(&PathBuf::from("src/foo.js"), &ignore_set));
+        assert!(ignore_set.is_match(&PathBuf::from("src/foo.test.js")));
+        assert!(!ignore_set.is_match(&PathBuf::from("src/foo.js")));
     }
 
     #[test]
     fn test_no_defaults() {
-        let ignore_set = IgnorePatternBuilder::new()
+        let (ignore_set, _) = IgnorePatternBuilder::new()
             .no_defaults()
-            .build()
+            .build_with_metadata()
             .expect("Failed to build ignore set");
 
         // Should not match default patterns
-        assert!(!should_ignore(
-            &PathBuf::from("node_modules/react/index.js"),
-            &ignore_set
-        ));
-        assert!(!should_ignore(&PathBuf::from(".next/foo.js"), &ignore_set));
+        assert!(!ignore_set.is_match(&PathBuf::from("node_modules/react/index.js")));
+        assert!(!ignore_set.is_match(&PathBuf::from(".next/foo.js")));
     }
 
     #[test]
     fn test_user_patterns_do_not_match() {
-        let ignore_set = IgnorePatternBuilder::new()
-            .build()
+        let (ignore_set, _) = IgnorePatternBuilder::new()
+            .build_with_metadata()
             .expect("Failed to build ignore set");
 
-        assert!(!should_ignore(&PathBuf::from("src/index.js"), &ignore_set));
-        assert!(!should_ignore(
-            &PathBuf::from("pages/about.tsx"),
-            &ignore_set
-        ));
-        assert!(!should_ignore(
-            &PathBuf::from("utils/helpers.ts"),
-            &ignore_set
-        ));
+        assert!(!ignore_set.is_match(&PathBuf::from("src/index.js")));
+        assert!(!ignore_set.is_match(&PathBuf::from("pages/about.tsx")));
+        assert!(!ignore_set.is_match(&PathBuf::from("utils/helpers.ts")));
     }
 
     #[test]
     fn test_build_with_metadata() {
-        let (ignore_set, pattern_infos) = IgnorePatternBuilder::new()
-            .add_pattern("**/*.test.js")
+        let (_ignore_set, pattern_infos) = IgnorePatternBuilder::new()
+            .add_patterns(&["**/*.test.js"])
             .expect("Failed to add pattern")
             .build_with_metadata()
             .expect("Failed to build with metadata");
@@ -361,7 +314,7 @@ mod tests {
     fn test_no_defaults_with_metadata() {
         let (ignore_set, pattern_infos) = IgnorePatternBuilder::new()
             .no_defaults()
-            .add_pattern("**/*.foo")
+            .add_patterns(&["**/*.foo"])
             .expect("Failed to add pattern")
             .build_with_metadata()
             .expect("Failed to build with metadata");
@@ -372,6 +325,6 @@ mod tests {
 
         // node_modules should NOT be ignored
         let node_modules_file = PathBuf::from("node_modules/react/index.js");
-        assert!(!should_ignore(&node_modules_file, &ignore_set));
+        assert!(!ignore_set.is_match(&node_modules_file));
     }
 }

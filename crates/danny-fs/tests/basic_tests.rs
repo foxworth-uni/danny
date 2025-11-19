@@ -1,9 +1,8 @@
 //! Basic tests for FileSystem implementations.
 
-use danny_fs::{FileSystem, NativeFileSystem, DiscoveryOptions};
-use tempfile::TempDir;
+use danny_fs::{DiscoveryOptions, FileSystem, NativeFileSystem};
 use std::fs;
-use std::path::PathBuf;
+use tempfile::TempDir;
 
 #[tokio::test]
 async fn test_native_read_write() {
@@ -64,12 +63,15 @@ async fn test_native_discover_files() {
     fs::write(temp_dir.path().join("bar.js"), "test").unwrap();
     fs::write(temp_dir.path().join("baz.txt"), "test").unwrap();
 
-    let discovered = fs.discover_files(
-        temp_dir.path(),
-        &[".ts", ".js"],
-        &[],
-        &DiscoveryOptions::default(),
-    ).await.unwrap();
+    let discovered = fs
+        .discover_files(
+            temp_dir.path(),
+            &[".ts", ".js"],
+            &[],
+            &DiscoveryOptions::default(),
+        )
+        .await
+        .unwrap();
 
     assert_eq!(discovered.len(), 2);
     assert!(discovered.iter().any(|p| p.ends_with("foo.ts")));
@@ -124,7 +126,10 @@ mod wasm_tests {
 
         let fs = WasmFileSystem::new("/project", files).unwrap();
 
-        let contents = fs.read_to_string(std::path::Path::new("/project/test.txt")).await.unwrap();
+        let contents = fs
+            .read_to_string(std::path::Path::new("/project/test.txt"))
+            .await
+            .unwrap();
         assert_eq!(contents, "Hello, WASM!");
     }
 
@@ -135,8 +140,14 @@ mod wasm_tests {
 
         let fs = WasmFileSystem::new("/project", files).unwrap();
 
-        assert!(fs.exists(std::path::Path::new("/project/test.txt")).await.unwrap());
-        assert!(!fs.exists(std::path::Path::new("/project/missing.txt")).await.unwrap());
+        assert!(fs
+            .exists(std::path::Path::new("/project/test.txt"))
+            .await
+            .unwrap());
+        assert!(!fs
+            .exists(std::path::Path::new("/project/missing.txt"))
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
@@ -148,12 +159,15 @@ mod wasm_tests {
 
         let fs = WasmFileSystem::new("/project", files).unwrap();
 
-        let discovered = fs.discover_files(
-            std::path::Path::new("/project"),
-            &[".ts", ".js"],
-            &[],
-            &DiscoveryOptions::default(),
-        ).await.unwrap();
+        let discovered = fs
+            .discover_files(
+                std::path::Path::new("/project"),
+                &[".ts", ".js"],
+                &[],
+                &DiscoveryOptions::default(),
+            )
+            .await
+            .unwrap();
 
         assert_eq!(discovered.len(), 2);
     }
@@ -163,10 +177,7 @@ mod wasm_tests {
         let files = HashMap::new();
         let fs = WasmFileSystem::new("/project", files).unwrap();
 
-        let malicious_paths = vec![
-            "../../../etc/passwd",
-            "../../.ssh/id_rsa",
-        ];
+        let malicious_paths = vec!["../../../etc/passwd", "../../.ssh/id_rsa"];
 
         for path in malicious_paths {
             let result = fs.read_to_string(std::path::Path::new(path)).await;
@@ -178,4 +189,3 @@ mod wasm_tests {
         }
     }
 }
-

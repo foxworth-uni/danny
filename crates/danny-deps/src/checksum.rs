@@ -36,8 +36,11 @@ impl ChecksumVerifier {
                 let mut hasher = Sha512::new();
                 hasher.update(data);
                 // npm uses base64 encoding for SHA-512
-                use base64::{Engine as _, engine::general_purpose};
-                format!("sha512-{}", general_purpose::STANDARD.encode(hasher.finalize()))
+                use base64::{engine::general_purpose, Engine as _};
+                format!(
+                    "sha512-{}",
+                    general_purpose::STANDARD.encode(hasher.finalize())
+                )
             }
         }
     }
@@ -77,12 +80,12 @@ impl ChecksumVerifier {
     pub fn verify_from_string(&self, data: &[u8], expected: &str) -> Result<()> {
         // Handle npm-style "sha512-..." prefix
         let expected_clean = expected.strip_prefix("sha512-").unwrap_or(expected);
-        
+
         // For SHA-512, we need to compare base64-encoded values
         if matches!(self.algorithm, ChecksumAlgorithm::Sha512) {
             let computed = self.compute(data);
             let computed_clean = computed.strip_prefix("sha512-").unwrap_or(&computed);
-            
+
             if computed_clean == expected_clean {
                 Ok(())
             } else {
@@ -152,4 +155,3 @@ mod tests {
         assert!(verifier.verify_from_string(data, without_prefix).is_ok());
     }
 }
-

@@ -20,7 +20,7 @@
 //! ```
 
 mod file_system;
-pub use file_system::{FileSystem, FileMetadata, DiscoveryOptions};
+pub use file_system::{DiscoveryOptions, FileMetadata, FileSystem};
 
 #[cfg(feature = "native")]
 pub mod native;
@@ -37,4 +37,3 @@ pub use NativeFileSystem as DefaultFileSystem;
 
 #[cfg(all(not(feature = "native"), feature = "wasm"))]
 pub use WasmFileSystem as DefaultFileSystem;
-

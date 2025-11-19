@@ -15,12 +15,12 @@ pub fn parse_changelog(markdown: &str) -> ParsedChangelog {
     let mut current_entry: Option<(String, String, String, Option<String>)> = None;
     let mut preamble = String::new();
     let mut in_preamble = true;
-    
+
     for line in markdown.lines() {
         // Check if this is a version heading
         if let Some((heading, version, date)) = parse_version_heading(line) {
             in_preamble = false;
-            
+
             // Save previous entry if exists
             if let Some((h, v, content, d)) = current_entry.take() {
                 entries.push(ChangelogEntry {
@@ -30,7 +30,7 @@ pub fn parse_changelog(markdown: &str) -> ParsedChangelog {
                     heading: h,
                 });
             }
-            
+
             // Start new entry
             current_entry = Some((heading, version, String::new(), date));
         } else {
@@ -44,7 +44,7 @@ pub fn parse_changelog(markdown: &str) -> ParsedChangelog {
             }
         }
     }
-    
+
     // Save last entry
     if let Some((h, v, content, d)) = current_entry {
         entries.push(ChangelogEntry {
@@ -54,7 +54,7 @@ pub fn parse_changelog(markdown: &str) -> ParsedChangelog {
             heading: h,
         });
     }
-    
+
     ParsedChangelog {
         entries,
         other_content: if preamble.trim().is_empty() {
@@ -70,15 +70,15 @@ pub fn parse_changelog(markdown: &str) -> ParsedChangelog {
 /// Returns: (original_heading, version, optional_date)
 fn parse_version_heading(line: &str) -> Option<(String, String, Option<String>)> {
     let line = line.trim();
-    
+
     // Skip if not a heading
     if !line.starts_with('#') {
         return None;
     }
-    
+
     // Remove heading markers
     let content = line.trim_start_matches('#').trim();
-    
+
     // Try various patterns
     let patterns = [
         // ## [1.2.3] - 2024-01-15 (Keep a Changelog)
@@ -92,7 +92,7 @@ fn parse_version_heading(line: &str) -> Option<(String, String, Option<String>)>
         // ## 1.2.3 - Jan 15 2024
         r"^([v]?[\d.]+(?:-[\w.]+)?)\s*-\s*([A-Za-z]+\s+\d{1,2}\s+\d{4})",
     ];
-    
+
     for pattern in &patterns {
         if let Ok(re) = Regex::new(pattern) {
             if let Some(caps) = re.captures(content) {
@@ -102,7 +102,7 @@ fn parse_version_heading(line: &str) -> Option<(String, String, Option<String>)>
             }
         }
     }
-    
+
     // Version only patterns (no date)
     let version_only_patterns = [
         // ## [1.2.3]
@@ -112,7 +112,7 @@ fn parse_version_heading(line: &str) -> Option<(String, String, Option<String>)>
         // ## v1.2.3
         r"^v([\d.]+(?:-[\w.]+)?)$",
     ];
-    
+
     for pattern in &version_only_patterns {
         if let Ok(re) = Regex::new(pattern) {
             if let Some(caps) = re.captures(content) {
@@ -121,7 +121,7 @@ fn parse_version_heading(line: &str) -> Option<(String, String, Option<String>)>
             }
         }
     }
-    
+
     None
 }
 
@@ -131,7 +131,7 @@ fn normalize_date(date_str: &str) -> String {
     if date_str.len() == 10 && date_str.chars().filter(|c| *c == '-').count() == 2 {
         return date_str.to_string();
     }
-    
+
     // Try to parse natural language dates
     // For Phase 1, we'll keep it simple and just return the original
     // Phase 2 could add chrono for proper parsing
@@ -141,7 +141,7 @@ fn normalize_date(date_str: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_keep_a_changelog_format() {
         let md = r#"# Changelog
@@ -154,7 +154,7 @@ mod tests {
 ### Fixed
 - Bug fix
 "#;
-        
+
         let parsed = parse_changelog(md);
         assert_eq!(parsed.entries.len(), 2);
         assert_eq!(parsed.entries[0].version, "1.2.3");
@@ -162,7 +162,7 @@ mod tests {
         assert_eq!(parsed.entries[1].version, "1.2.2");
         assert_eq!(parsed.entries[1].date, Some("2024-01-10".to_string()));
     }
-    
+
     #[test]
     fn test_angular_format() {
         let md = r#"## 1.2.3 (2024-01-15)
@@ -171,13 +171,13 @@ mod tests {
 ## 1.2.2 (2024-01-10)
 - Fix
 "#;
-        
+
         let parsed = parse_changelog(md);
         assert_eq!(parsed.entries.len(), 2);
         assert_eq!(parsed.entries[0].version, "1.2.3");
         assert_eq!(parsed.entries[0].date, Some("2024-01-15".to_string()));
     }
-    
+
     #[test]
     fn test_version_only() {
         let md = r#"## [1.2.3]
@@ -186,7 +186,7 @@ mod tests {
 ## 1.2.2
 - Fix
 "#;
-        
+
         let parsed = parse_changelog(md);
         assert_eq!(parsed.entries.len(), 2);
         assert_eq!(parsed.entries[0].version, "1.2.3");
@@ -194,7 +194,7 @@ mod tests {
         assert_eq!(parsed.entries[1].version, "1.2.2");
         assert_eq!(parsed.entries[1].date, None);
     }
-    
+
     #[test]
     fn test_timestamp_format() {
         let md = r#"# v1.2.3 / 2024-01-15
@@ -203,13 +203,13 @@ mod tests {
 # v1.2.2 / 2024-01-10
 - Fix
 "#;
-        
+
         let parsed = parse_changelog(md);
         assert_eq!(parsed.entries.len(), 2);
         assert_eq!(parsed.entries[0].version, "1.2.3");
         assert_eq!(parsed.entries[0].date, Some("2024-01-15".to_string()));
     }
-    
+
     #[test]
     fn test_with_preamble() {
         let md = r#"# Changelog
@@ -218,13 +218,13 @@ All notable changes to this project will be documented in this file.
 ## [1.2.3] - 2024-01-15
 - Feature
 "#;
-        
+
         let parsed = parse_changelog(md);
         assert_eq!(parsed.entries.len(), 1);
         assert!(parsed.other_content.is_some());
         assert!(parsed.other_content.unwrap().contains("notable changes"));
     }
-    
+
     #[test]
     fn test_empty_changelog() {
         let md = "";
@@ -233,4 +233,3 @@ All notable changes to this project will be documented in this file.
         assert_eq!(parsed.other_content, None);
     }
 }
-

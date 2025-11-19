@@ -1,10 +1,10 @@
 //! Class member analysis - converts Fob's class member data to Danny findings.
 
-use danny_core::{Finding, ClassMemberKind, SymbolSpan};
+use danny_core::{ClassMemberKind, Finding, SymbolSpan};
 use fob::graph::{ModuleGraph, UnusedSymbol};
 use std::collections::HashMap;
 use std::hash::BuildHasher;
-use std::path::PathBuf;
+use std::path::Path;
 
 /// Analyzer for class member findings.
 pub struct ClassMemberAnalyzer;
@@ -124,9 +124,7 @@ impl ClassMemberAnalyzer {
     }
 
     /// Convert Fob's SymbolKind to Danny's ClassMemberKind.
-    fn convert_symbol_kind_to_member_kind(
-        kind: &fob::graph::SymbolKind,
-    ) -> ClassMemberKind {
+    fn convert_symbol_kind_to_member_kind(kind: &fob::graph::SymbolKind) -> ClassMemberKind {
         match kind {
             fob::graph::SymbolKind::ClassMethod => ClassMemberKind::Method,
             fob::graph::SymbolKind::ClassProperty => ClassMemberKind::Property,
@@ -138,12 +136,9 @@ impl ClassMemberAnalyzer {
     }
 
     /// Convert Fob's SymbolSpan to Danny's SymbolSpan.
-    fn convert_symbol_span(
-        span: &fob::graph::SymbolSpan,
-        file: &PathBuf,
-    ) -> SymbolSpan {
+    fn convert_symbol_span(span: &fob::graph::SymbolSpan, file: &Path) -> SymbolSpan {
         SymbolSpan {
-            file: file.clone(),
+            file: file.to_path_buf(),
             line: span.line,
             column: span.column,
             offset: span.offset,
@@ -161,8 +156,7 @@ impl ClassMemberAnalyzer {
     }
 
     /// Check if a path is virtual (should be filtered).
-    fn is_virtual_path(path: &PathBuf) -> bool {
+    fn is_virtual_path(path: &Path) -> bool {
         path.to_string_lossy().starts_with("virtual:")
     }
 }
-

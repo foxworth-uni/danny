@@ -6,7 +6,7 @@
 use crate::constants::{
     MAX_CONTENT_SIZE, MAX_REGEX_LENGTH, REGEX_DFA_SIZE_LIMIT, REGEX_SIZE_LIMIT,
 };
-use crate::{RuleError, RuleMatcher, Result};
+use crate::{Result, RuleError, RuleMatcher};
 use fob::graph::{Export, Module};
 use regex::{Regex, RegexBuilder};
 use std::collections::HashSet;
@@ -337,7 +337,10 @@ impl CompiledMatcher {
                     fob::graph::ImportSpecifier::Namespace(name) => name.clone(),
                 })
                 .collect();
-            if !required_specs.iter().all(|req| import_spec_names.contains(req)) {
+            if !required_specs
+                .iter()
+                .all(|req| import_spec_names.contains(req))
+            {
                 return false;
             }
         }
@@ -549,10 +552,7 @@ impl CompiledMatcher {
 
 /// Check if a module imports from a specific source
 fn module_imports_from(module: &Module, source: &str) -> bool {
-    module
-        .imports
-        .iter()
-        .any(|import| import.source == source)
+    module.imports.iter().any(|import| import.source == source)
 }
 
 #[cfg(test)]
@@ -728,24 +728,12 @@ mod tests {
         let module = create_test_module("test.ts", vec![]);
 
         // Should match: usage count >= min
-        assert!(compiled.matches(
-            &module,
-            &create_test_export_with_usage("export1", 5)
-        ));
-        assert!(compiled.matches(
-            &module,
-            &create_test_export_with_usage("export2", 10)
-        ));
+        assert!(compiled.matches(&module, &create_test_export_with_usage("export1", 5)));
+        assert!(compiled.matches(&module, &create_test_export_with_usage("export2", 10)));
 
         // Should not match: usage count < min
-        assert!(!compiled.matches(
-            &module,
-            &create_test_export_with_usage("export3", 4)
-        ));
-        assert!(!compiled.matches(
-            &module,
-            &create_test_export_with_usage("export4", 0)
-        ));
+        assert!(!compiled.matches(&module, &create_test_export_with_usage("export3", 4)));
+        assert!(!compiled.matches(&module, &create_test_export_with_usage("export4", 0)));
     }
 
     #[test]
@@ -759,24 +747,12 @@ mod tests {
         let module = create_test_module("test.ts", vec![]);
 
         // Should match: usage count <= max
-        assert!(compiled.matches(
-            &module,
-            &create_test_export_with_usage("export1", 3)
-        ));
-        assert!(compiled.matches(
-            &module,
-            &create_test_export_with_usage("export2", 0)
-        ));
+        assert!(compiled.matches(&module, &create_test_export_with_usage("export1", 3)));
+        assert!(compiled.matches(&module, &create_test_export_with_usage("export2", 0)));
 
         // Should not match: usage count > max
-        assert!(!compiled.matches(
-            &module,
-            &create_test_export_with_usage("export3", 4)
-        ));
-        assert!(!compiled.matches(
-            &module,
-            &create_test_export_with_usage("export4", 10)
-        ));
+        assert!(!compiled.matches(&module, &create_test_export_with_usage("export3", 4)));
+        assert!(!compiled.matches(&module, &create_test_export_with_usage("export4", 10)));
     }
 
     #[test]
@@ -791,28 +767,13 @@ mod tests {
         let module = create_test_module("test.ts", vec![]);
 
         // Should match: usage count within range [2, 5]
-        assert!(compiled.matches(
-            &module,
-            &create_test_export_with_usage("export1", 2)
-        ));
-        assert!(compiled.matches(
-            &module,
-            &create_test_export_with_usage("export2", 3)
-        ));
-        assert!(compiled.matches(
-            &module,
-            &create_test_export_with_usage("export3", 5)
-        ));
+        assert!(compiled.matches(&module, &create_test_export_with_usage("export1", 2)));
+        assert!(compiled.matches(&module, &create_test_export_with_usage("export2", 3)));
+        assert!(compiled.matches(&module, &create_test_export_with_usage("export3", 5)));
 
         // Should not match: usage count outside range
-        assert!(!compiled.matches(
-            &module,
-            &create_test_export_with_usage("export4", 1)
-        ));
-        assert!(!compiled.matches(
-            &module,
-            &create_test_export_with_usage("export5", 6)
-        ));
+        assert!(!compiled.matches(&module, &create_test_export_with_usage("export4", 1)));
+        assert!(!compiled.matches(&module, &create_test_export_with_usage("export5", 6)));
     }
 
     #[test]
@@ -826,16 +787,10 @@ mod tests {
         let module = create_test_module("test.ts", vec![]);
 
         // Should match: unused exports (count = 0)
-        assert!(compiled.matches(
-            &module,
-            &create_test_export_with_usage("unused1", 0)
-        ));
+        assert!(compiled.matches(&module, &create_test_export_with_usage("unused1", 0)));
 
         // Should not match: any usage
-        assert!(!compiled.matches(
-            &module,
-            &create_test_export_with_usage("used1", 1)
-        ));
+        assert!(!compiled.matches(&module, &create_test_export_with_usage("used1", 1)));
     }
 
     #[test]

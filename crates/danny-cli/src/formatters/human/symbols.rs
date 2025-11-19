@@ -9,7 +9,7 @@ pub fn print_symbols(findings: &[&Finding]) {
     let mut unused_private_members = Vec::new();
     let mut unused_public_members = Vec::new();
     let mut unused_enum_members = Vec::new();
-    
+
     for finding in findings {
         match finding {
             UnusedSymbol { .. } => unused_symbols.push(*finding),
@@ -19,11 +19,18 @@ pub fn print_symbols(findings: &[&Finding]) {
             _ => {}
         }
     }
-    
+
     if !unused_symbols.is_empty() {
         println!("  Unused Symbols:");
         for finding in unused_symbols.iter().take(20) {
-            if let UnusedSymbol { module, symbol_name, kind, span, explanation: _ } = finding {
+            if let UnusedSymbol {
+                module,
+                symbol_name,
+                kind,
+                span,
+                explanation: _,
+            } = finding
+            {
                 use danny_core::types::SymbolKind;
                 let kind_str = match kind {
                     SymbolKind::Function => "function",
@@ -47,7 +54,7 @@ pub fn print_symbols(findings: &[&Finding]) {
             println!("    ... and {} more", unused_symbols.len() - 20);
         }
     }
-    
+
     if !unused_private_members.is_empty() {
         println!("\n  Unused Private Class Members (Safe to Remove):");
         for finding in unused_private_members.iter().take(20) {
@@ -73,7 +80,7 @@ pub fn print_symbols(findings: &[&Finding]) {
             println!("    ... and {} more", unused_private_members.len() - 20);
         }
     }
-    
+
     if !unused_public_members.is_empty() {
         println!("\n  Unused Public Class Members (Warning: May be used externally):");
         for finding in unused_public_members.iter().take(20) {
@@ -99,7 +106,7 @@ pub fn print_symbols(findings: &[&Finding]) {
             println!("    ... and {} more", unused_public_members.len() - 20);
         }
     }
-    
+
     if !unused_enum_members.is_empty() {
         println!("\n  Unused Enum Members:");
         for finding in unused_enum_members.iter().take(20) {
@@ -111,11 +118,14 @@ pub fn print_symbols(findings: &[&Finding]) {
                 ..
             } = finding
             {
-                let value_str = value.as_ref().map(|v| match v {
-                    danny_core::EnumValue::Number(n) => format!(" = {}", n),
-                    danny_core::EnumValue::String(s) => format!(" = \"{}\"", s),
-                    danny_core::EnumValue::Computed => " (computed)".to_string(),
-                }).unwrap_or_default();
+                let value_str = value
+                    .as_ref()
+                    .map(|v| match v {
+                        danny_core::EnumValue::Number(n) => format!(" = {}", n),
+                        danny_core::EnumValue::String(s) => format!(" = \"{}\"", s),
+                        danny_core::EnumValue::Computed => " (computed)".to_string(),
+                    })
+                    .unwrap_or_default();
                 println!(
                     "    → {}::{}{} in {}",
                     enum_name,
@@ -130,4 +140,3 @@ pub fn print_symbols(findings: &[&Finding]) {
         }
     }
 }
-

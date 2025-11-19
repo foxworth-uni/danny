@@ -1,7 +1,7 @@
 //! File category formatter.
 
-use danny_core::{AnalysisResult, Finding};
 use super::format_bytes;
+use danny_core::{AnalysisResult, Finding};
 use Finding::*;
 
 pub fn print_files(findings: &[&Finding], result: &AnalysisResult) {
@@ -9,7 +9,7 @@ pub fn print_files(findings: &[&Finding], result: &AnalysisResult) {
     let mut unreachable_modules = Vec::new();
     let mut unreachable_files = Vec::new();
     let mut dead_code_modules = Vec::new();
-    
+
     for finding in findings {
         match finding {
             UnreachableModule { .. } => unreachable_modules.push(*finding),
@@ -18,19 +18,17 @@ pub fn print_files(findings: &[&Finding], result: &AnalysisResult) {
             _ => {}
         }
     }
-    
+
     // Print bundle size impact if available
     if let Some(impact) = &result.statistics.bundle_size_impact {
         let total_formatted = format_bytes(impact.total_savings_bytes);
         let safe_formatted = format_bytes(impact.safe_savings_bytes);
-        let review_formatted = format_bytes(
-            impact.total_savings_bytes - impact.safe_savings_bytes
-        );
+        let review_formatted = format_bytes(impact.total_savings_bytes - impact.safe_savings_bytes);
         println!(
             "  Total potential savings: {} ({} safe, {} review)",
             total_formatted, safe_formatted, review_formatted
         );
-        
+
         let mut safe_modules = Vec::new();
         let mut review_modules = Vec::new();
         for module_info in &impact.by_module {
@@ -40,7 +38,7 @@ pub fn print_files(findings: &[&Finding], result: &AnalysisResult) {
                 safe_modules.push(module_info);
             }
         }
-        
+
         for module_info in safe_modules.iter().take(10) {
             let size_formatted = format_bytes(module_info.size_bytes);
             println!(
@@ -52,7 +50,7 @@ pub fn print_files(findings: &[&Finding], result: &AnalysisResult) {
         if safe_modules.len() > 10 {
             println!("    ... and {} more safe modules", safe_modules.len() - 10);
         }
-        
+
         for module_info in review_modules.iter().take(10) {
             let size_formatted = format_bytes(module_info.size_bytes);
             println!(
@@ -62,12 +60,20 @@ pub fn print_files(findings: &[&Finding], result: &AnalysisResult) {
             );
         }
         if review_modules.len() > 10 {
-            println!("    ... and {} more modules to review", review_modules.len() - 10);
+            println!(
+                "    ... and {} more modules to review",
+                review_modules.len() - 10
+            );
         }
     } else {
         // Fallback: print unreachable modules
         for finding in unreachable_modules.iter().take(20) {
-            if let UnreachableModule { path, size, metadata } = finding {
+            if let UnreachableModule {
+                path,
+                size,
+                metadata,
+            } = finding
+            {
                 let size_formatted = format_bytes(*size);
                 let indicator = if metadata.safe_to_delete {
                     "✓ Safe to delete"
@@ -83,12 +89,17 @@ pub fn print_files(findings: &[&Finding], result: &AnalysisResult) {
             println!("    ... and {} more", unreachable_modules.len() - 20);
         }
     }
-    
+
     // Print unreachable files
     if !unreachable_files.is_empty() {
         println!("\n  Unreachable Files:");
         for finding in unreachable_files.iter().take(20) {
-            if let UnreachableFile { path, size, explanation: _ } = finding {
+            if let UnreachableFile {
+                path,
+                size,
+                explanation: _,
+            } = finding
+            {
                 let size_formatted = format_bytes(*size);
                 println!("    {} ({})", path.display(), size_formatted);
             }
@@ -97,7 +108,7 @@ pub fn print_files(findings: &[&Finding], result: &AnalysisResult) {
             println!("    ... and {} more", unreachable_files.len() - 20);
         }
     }
-    
+
     // Print dead code modules
     if !dead_code_modules.is_empty() {
         println!("\n  Dead Code Modules:");
@@ -116,4 +127,3 @@ pub fn print_files(findings: &[&Finding], result: &AnalysisResult) {
         }
     }
 }
-

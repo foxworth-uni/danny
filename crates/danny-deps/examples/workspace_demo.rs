@@ -3,9 +3,12 @@
 //! Run with: cargo run --package danny-deps --example workspace_demo
 
 use danny_deps::{CargoDependencyManager, DependencyManager};
+use danny_fs::NativeFileSystem;
 use std::path::Path;
+use std::sync::Arc;
 
-fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
     println!("=== danny-deps: Workspace Detection ===\n");
 
     let manager = CargoDependencyManager::new();
@@ -16,13 +19,19 @@ fn main() -> anyhow::Result<()> {
         return Ok(());
     }
 
+    // Create FileSystem instance
+    let fs = Arc::new(
+        NativeFileSystem::new(cargo_toml.parent().unwrap_or_else(|| Path::new(".")))
+            .map_err(|e| anyhow::anyhow!("Failed to create filesystem: {}", e))?,
+    );
+
     // Check if this is a workspace root
-    match manager.is_workspace_root(cargo_toml) {
+    match manager.is_workspace_root(&fs, cargo_toml).await {
         Ok(true) => {
             println!("✓ This is a workspace root\n");
 
             // Find workspace members
-            match manager.find_workspace_members(cargo_toml.parent().unwrap()) {
+            match manager.find_workspace_members(&fs, cargo_toml.parent().unwrap()).await {
                 Ok(members) => {
                     println!("Workspace members ({}):", members.len());
                     for member in members {
@@ -51,4 +60,3 @@ fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
-

@@ -291,7 +291,9 @@ impl RuleActionConfig {
         } else if self.warn == Some(true) {
             RuleAction::Warn {
                 message: self.message.clone().unwrap_or_else(|| {
-                    self.reason.clone().unwrap_or_else(|| "Rule matched".to_string())
+                    self.reason
+                        .clone()
+                        .unwrap_or_else(|| "Rule matched".to_string())
                 }),
             }
         } else if let Some(severity) = self.severity {

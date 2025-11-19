@@ -23,9 +23,7 @@ pub struct UnusedExport {
 
 impl TypeOnlyAnalyzer {
     /// Categorizes unused exports by runtime impact
-    pub fn categorize_exports(
-        unused_exports: Vec<UnusedExport>,
-    ) -> CategorizedExports {
+    pub fn categorize_exports(unused_exports: Vec<UnusedExport>) -> CategorizedExports {
         let mut type_only = Vec::new();
         let mut runtime = Vec::new();
 
@@ -70,13 +68,11 @@ mod tests {
 
     #[test]
     fn test_all_runtime() {
-        let exports = vec![
-            UnusedExport {
-                module: PathBuf::from("a.ts"),
-                name: "foo".into(),
-                is_type_only: false,
-            },
-        ];
+        let exports = vec![UnusedExport {
+            module: PathBuf::from("a.ts"),
+            name: "foo".into(),
+            is_type_only: false,
+        }];
 
         let categorized = TypeOnlyAnalyzer::categorize_exports(exports);
 
@@ -84,4 +80,3 @@ mod tests {
         assert_eq!(categorized.runtime.len(), 1);
     }
 }
-

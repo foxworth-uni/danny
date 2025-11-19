@@ -84,7 +84,10 @@ pub async fn fetch_changelog(client: &HttpClient, repo: &RepositoryUrl) -> Resul
         }
     }
 
-    Err(Error::ChangelogNotFound(repo.owner.clone(), repo.repo.clone()))
+    Err(Error::ChangelogNotFound(
+        repo.owner.clone(),
+        repo.repo.clone(),
+    ))
 }
 
 /// Try to fetch a specific file from the repository's default branch
@@ -110,11 +113,7 @@ mod tests {
     #[ignore] // Requires network access
     async fn test_fetch_releases() {
         let client = HttpClient::new().unwrap();
-        let repo = RepositoryUrl::new(
-            "facebook",
-            "react",
-            "https://github.com/facebook/react",
-        );
+        let repo = RepositoryUrl::new("facebook", "react", "https://github.com/facebook/react");
 
         let releases = fetch_releases(&client, &repo).await.unwrap();
         assert!(!releases.is_empty());
@@ -125,11 +124,7 @@ mod tests {
     #[ignore] // Requires network access
     async fn test_fetch_changelog() {
         let client = HttpClient::new().unwrap();
-        let repo = RepositoryUrl::new(
-            "facebook",
-            "react",
-            "https://github.com/facebook/react",
-        );
+        let repo = RepositoryUrl::new("facebook", "react", "https://github.com/facebook/react");
 
         let changelog = fetch_changelog(&client, &repo).await.unwrap();
         assert!(!changelog.is_empty());

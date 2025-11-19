@@ -1,16 +1,14 @@
 //! NPM dependency analysis - converts Fob's npm dependency data to Danny findings.
 
 use danny_core::{Finding, NpmDependencyType};
-use fob::graph::{package_json::UnusedDependency, package_json::DependencyCoverage};
+use fob::graph::{package_json::DependencyCoverage, package_json::UnusedDependency};
 
 /// Analyzer for npm dependency findings.
 pub struct NpmDependencyAnalyzer;
 
 impl NpmDependencyAnalyzer {
     /// Convert Fob's unused npm dependencies to Danny findings.
-    pub fn convert_unused_dependencies(
-        unused: &[UnusedDependency],
-    ) -> Vec<Finding> {
+    pub fn convert_unused_dependencies(unused: &[UnusedDependency]) -> Vec<Finding> {
         unused
             .iter()
             .map(|dep| Finding::UnusedNpmDependency {
@@ -56,17 +54,10 @@ impl NpmDependencyAnalyzer {
         dep_type: &fob::graph::package_json::DependencyType,
     ) -> NpmDependencyType {
         match dep_type {
-            fob::graph::package_json::DependencyType::Production => {
-                NpmDependencyType::Production
-            }
-            fob::graph::package_json::DependencyType::Development => {
-                NpmDependencyType::Development
-            }
+            fob::graph::package_json::DependencyType::Production => NpmDependencyType::Production,
+            fob::graph::package_json::DependencyType::Development => NpmDependencyType::Development,
             fob::graph::package_json::DependencyType::Peer => NpmDependencyType::Peer,
-            fob::graph::package_json::DependencyType::Optional => {
-                NpmDependencyType::Optional
-            }
+            fob::graph::package_json::DependencyType::Optional => NpmDependencyType::Optional,
         }
     }
 }
-

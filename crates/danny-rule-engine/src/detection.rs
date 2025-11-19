@@ -3,9 +3,9 @@
 //! This module provides TOML-driven framework detection, replacing hardcoded
 //! detection logic with declarative rules.
 
-use crate::{Result, RuleError, TomlRuleFile, DetectionRule, DetectionType};
-use regex::Regex;
+use crate::{DetectionRule, DetectionType, Result, RuleError, TomlRuleFile};
 use globset::{Glob, GlobMatcher};
+use regex::Regex;
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -45,7 +45,7 @@ impl CompiledDetectionRule {
                 let regex = RegexBuilder::new(&rule.pattern)
                     .dfa_size_limit(MAX_DFA_SIZE)
                     .build()
-                    .map_err(|e| RuleError::RegexError(e))?;
+                    .map_err(RuleError::RegexError)?;
 
                 (Some(regex), None)
             }
@@ -66,11 +66,7 @@ impl CompiledDetectionRule {
             }
         };
 
-        Ok(Self {
-            rule,
-            regex,
-            glob,
-        })
+        Ok(Self { rule, regex, glob })
     }
 }
 
@@ -116,8 +112,7 @@ impl FrameworkDetector {
         let mut suppresses = HashMap::new();
 
         for (_name, toml_content) in toml_files {
-            let file: TomlRuleFile = toml::from_str(toml_content)
-                .map_err(|e| RuleError::TomlError(e))?;
+            let file: TomlRuleFile = toml::from_str(toml_content).map_err(RuleError::TomlError)?;
 
             if let Some(metadata) = file.framework {
                 let framework_name = metadata.name.clone();
@@ -196,7 +191,8 @@ impl FrameworkDetector {
                                 confidence: 0.0,
                                 evidence: Vec::new(),
                             })
-                            .evidence.push(evidence);
+                            .evidence
+                            .push(evidence);
                     }
                 }
             }
@@ -223,7 +219,8 @@ impl FrameworkDetector {
                     }
                     DetectionType::FileExtension => {
                         if let Some(ext) = path.extension() {
-                            matched = ext.to_string_lossy() == rule.rule.pattern.trim_start_matches('.');
+                            matched =
+                                ext.to_string_lossy() == rule.rule.pattern.trim_start_matches('.');
                         }
                     }
                     _ => continue,
@@ -232,7 +229,11 @@ impl FrameworkDetector {
                 if matched {
                     let evidence = DetectionEvidence {
                         framework: framework_name.clone(),
-                        rule: format!("{}:{}", format!("{:?}", rule.rule.rule_type).to_lowercase(), rule.rule.pattern),
+                        rule: format!(
+                            "{}:{}",
+                            format!("{:?}", rule.rule.rule_type).to_lowercase(),
+                            rule.rule.pattern
+                        ),
                         confidence: weight,
                         context: Some(format!("path: {}", path_str)),
                     };
@@ -244,7 +245,8 @@ impl FrameworkDetector {
                             confidence: 0.0,
                             evidence: Vec::new(),
                         })
-                        .evidence.push(evidence);
+                        .evidence
+                        .push(evidence);
                 }
             }
         }
@@ -267,16 +269,20 @@ impl FrameworkDetector {
                     DetectionType::PackageDependency => {
                         dependencies.contains_key(&rule.rule.pattern)
                     }
-                    DetectionType::PackageScript => {
-                        scripts.values().any(|script| script.contains(&rule.rule.pattern))
-                    }
+                    DetectionType::PackageScript => scripts
+                        .values()
+                        .any(|script| script.contains(&rule.rule.pattern)),
                     _ => continue,
                 };
 
                 if matched {
                     let evidence = DetectionEvidence {
                         framework: framework_name.clone(),
-                        rule: format!("{}:{}", format!("{:?}", rule.rule.rule_type).to_lowercase(), rule.rule.pattern),
+                        rule: format!(
+                            "{}:{}",
+                            format!("{:?}", rule.rule.rule_type).to_lowercase(),
+                            rule.rule.pattern
+                        ),
                         confidence: weight,
                         context: Some(format!("package.json: {}", rule.rule.pattern)),
                     };
@@ -288,7 +294,8 @@ impl FrameworkDetector {
                             confidence: 0.0,
                             evidence: Vec::new(),
                         })
-                        .evidence.push(evidence);
+                        .evidence
+                        .push(evidence);
                 }
             }
         }
@@ -297,7 +304,10 @@ impl FrameworkDetector {
     }
 
     /// Finalize detection results: calculate confidence, apply suppression, and sort
-    fn finalize_results(&self, mut results: HashMap<String, DetectionResult>) -> Vec<DetectionResult> {
+    fn finalize_results(
+        &self,
+        mut results: HashMap<String, DetectionResult>,
+    ) -> Vec<DetectionResult> {
         // Calculate total confidence scores
         for result in results.values_mut() {
             result.confidence = result
@@ -358,9 +368,8 @@ mod tests {
             weight = 1.0
         "#;
 
-        let detector = FrameworkDetector::from_toml_files(vec![
-            ("React".to_string(), toml),
-        ]).unwrap();
+        let detector =
+            FrameworkDetector::from_toml_files(vec![("React".to_string(), toml)]).unwrap();
 
         let imports = vec!["react".to_string(), "react-dom".to_string()];
         let results = detector.detect_from_imports(&imports);
@@ -398,7 +407,8 @@ mod tests {
         let detector = FrameworkDetector::from_toml_files(vec![
             ("Next.js".to_string(), nextjs_toml),
             ("React".to_string(), react_toml),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         let imports = vec!["next".to_string(), "react".to_string()];
         let results = detector.detect_from_imports(&imports);
@@ -435,9 +445,8 @@ mod tests {
             weight = 1.0
         "#;
 
-        let detector = FrameworkDetector::from_toml_files(vec![
-            ("React".to_string(), toml),
-        ]).unwrap();
+        let detector =
+            FrameworkDetector::from_toml_files(vec![("React".to_string(), toml)]).unwrap();
 
         // Should match "react/hooks", "react/dom"
         let imports = vec!["react/hooks".to_string(), "react/dom".to_string()];
@@ -465,9 +474,8 @@ mod tests {
             weight = 1.0
         "#;
 
-        let detector = FrameworkDetector::from_toml_files(vec![
-            ("React".to_string(), toml),
-        ]).unwrap();
+        let detector =
+            FrameworkDetector::from_toml_files(vec![("React".to_string(), toml)]).unwrap();
 
         // Should match only exact "react"
         let imports = vec!["react".to_string()];
@@ -477,7 +485,11 @@ mod tests {
         // Should NOT match "react-dom" or "react/hooks"
         let imports = vec!["react-dom".to_string(), "react/hooks".to_string()];
         let results = detector.detect_from_imports(&imports);
-        assert_eq!(results.len(), 0, "Pattern ^react$ should only match exact 'react'");
+        assert_eq!(
+            results.len(),
+            0,
+            "Pattern ^react$ should only match exact 'react'"
+        );
     }
 
     #[test]
@@ -493,9 +505,7 @@ mod tests {
         "#;
 
         // Should fail to parse invalid weight
-        let result = FrameworkDetector::from_toml_files(vec![
-            ("Test".to_string(), toml_nan),
-        ]);
+        let result = FrameworkDetector::from_toml_files(vec![("Test".to_string(), toml_nan)]);
         assert!(result.is_err(), "Should reject NaN weights");
     }
 
@@ -540,16 +550,24 @@ mod tests {
             ("Next.js".to_string(), nextjs_toml),
             ("React".to_string(), react_toml),
             ("Vue".to_string(), vue_toml),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         // All three detected, but React should be suppressed
         let imports = vec!["next".to_string(), "react".to_string(), "vue".to_string()];
         let results = detector.detect_from_imports(&imports);
 
-        assert_eq!(results.len(), 2, "Should have Next.js and Vue, React suppressed");
+        assert_eq!(
+            results.len(),
+            2,
+            "Should have Next.js and Vue, React suppressed"
+        );
         assert!(results.iter().any(|r| r.framework == "Next.js"));
         assert!(results.iter().any(|r| r.framework == "Vue"));
-        assert!(!results.iter().any(|r| r.framework == "React"), "React should be suppressed");
+        assert!(
+            !results.iter().any(|r| r.framework == "React"),
+            "React should be suppressed"
+        );
     }
 
     #[test]
@@ -579,15 +597,18 @@ mod tests {
         let detector = FrameworkDetector::from_toml_files(vec![
             ("High".to_string(), toml1),
             ("Low".to_string(), toml2),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         let imports = vec!["high".to_string(), "low".to_string()];
         let results = detector.detect_from_imports(&imports);
 
         // High priority should come first despite lower confidence
         assert_eq!(results.len(), 2);
-        assert_eq!(results[0].framework, "High", "Higher priority should be first");
+        assert_eq!(
+            results[0].framework, "High",
+            "Higher priority should be first"
+        );
         assert_eq!(results[1].framework, "Low");
     }
 }
-

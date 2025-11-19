@@ -220,8 +220,6 @@ mod tests {
         let deserialized: Project = toml::from_str(&toml_str).unwrap();
         assert_eq!(project, deserialized);
     }
-
-
 }
 
 /// What Danny should analyze - Package or Files mode

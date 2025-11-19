@@ -1,22 +1,19 @@
 //! JavaScript backend implementation using Fob.
 
-use danny_core::{AnalysisOptions, AnalysisResult, Finding, LanguageBackend, Result};
 use danny_core::types::SafetyAssessment;
+use danny_core::{AnalysisOptions, AnalysisResult, Finding, LanguageBackend, Result};
 use danny_fs::{FileSystem, NativeFileSystem};
 use std::sync::Arc;
 
+use crate::analyzers::{
+    BundleSizeAnalyzer, ClassMemberAnalyzer, DependencyChainAnalyzer, DynamicImportAnalyzer,
+    EnumMemberAnalyzer, NpmDependencyAnalyzer, QualityAnalyzer, SideEffectAnalyzer,
+    TypeOnlyAnalyzer, UnusedExport as AnalyzerUnusedExport,
+};
+use danny_core::circular_deps::CircularDependencyDetector;
 use danny_core::{AnalysisError, Dependency, ErrorSeverity, Statistics};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
-use crate::analyzers::{
-    SideEffectAnalyzer, BundleSizeAnalyzer,
-    TypeOnlyAnalyzer, UnusedExport as AnalyzerUnusedExport,
-    DynamicImportAnalyzer,
-    ClassMemberAnalyzer, EnumMemberAnalyzer,
-    NpmDependencyAnalyzer, DependencyChainAnalyzer,
-    QualityAnalyzer,
-};
-use danny_core::circular_deps::CircularDependencyDetector;
 use std::time::Instant;
 
 use crate::toml_config::DannyConfig;
@@ -51,7 +48,8 @@ use std::path::Path;
 /// ```
 pub struct JsBackend<F: FileSystem = NativeFileSystem> {
     runtime: tokio::runtime::Runtime,
-    #[allow(dead_code)] // Used when created via with_filesystem(), otherwise filesystem is created per-analysis
+    #[allow(dead_code)]
+    // Used when created via with_filesystem(), otherwise filesystem is created per-analysis
     fs: Arc<F>,
 }
 
@@ -76,12 +74,13 @@ impl JsBackend {
     pub fn new() -> Result<Self> {
         // Create a temporary filesystem - will be replaced per-analysis
         // This is a workaround until we can make FileSystem creation lazy
-        let temp_fs = Arc::new(
-            NativeFileSystem::new(".").map_err(|e| danny_core::Error::Backend {
-                backend: "JavaScript".to_string(),
-                message: format!("Failed to create filesystem: {}", e),
-            })?
-        );
+        let temp_fs =
+            Arc::new(
+                NativeFileSystem::new(".").map_err(|e| danny_core::Error::Backend {
+                    backend: "JavaScript".to_string(),
+                    message: format!("Failed to create filesystem: {}", e),
+                })?,
+            );
         Self::with_filesystem(temp_fs)
     }
 
@@ -103,11 +102,14 @@ impl JsBackend {
 }
 
 impl<F: FileSystem> JsBackend<F> {
-
     /// Loads Danny configuration from TOML file.
     ///
     /// If no config file exists, returns default configuration.
-    async fn load_config<FS: FileSystem>(&self, options: &AnalysisOptions, fs: &Arc<FS>) -> Result<DannyConfig> {
+    async fn load_config<FS: FileSystem>(
+        &self,
+        options: &AnalysisOptions,
+        fs: &Arc<FS>,
+    ) -> Result<DannyConfig> {
         let config_path = if let Some(path) = &options.config_path {
             path.clone()
         } else {
@@ -130,20 +132,24 @@ impl<F: FileSystem> JsBackend<F> {
     /// Performs analysis using Fob's async API with a provided filesystem.
     ///
     /// This is the internal implementation that runs Fob's analysis.
-    async fn analyze_async_with_fs<FS: FileSystem>(&self, options: AnalysisOptions, fs: Arc<FS>) -> Result<AnalysisResult> {
+    async fn analyze_async_with_fs<FS: FileSystem>(
+        &self,
+        options: AnalysisOptions,
+        fs: Arc<FS>,
+    ) -> Result<AnalysisResult> {
         use fob::analysis;
 
         let start = Instant::now();
 
         // Create Fob analysis options with Danny's TOML-based framework rules
-        let framework_rules = danny_rule_engine::load_built_in_rules()
-            .map_err(|err| danny_core::Error::Backend {
+        let framework_rules =
+            danny_rule_engine::load_built_in_rules().map_err(|err| danny_core::Error::Backend {
                 backend: "JavaScript".to_string(),
                 message: format!("Failed to load TOML framework rules: {err}"),
             })?;
 
         let fob_options = fob::analysis::AnalyzeOptions {
-            framework_rules, // Use TOML-based rules from danny-rule-engine
+            framework_rules,             // Use TOML-based rules from danny-rule-engine
             compute_usage_counts: false, // Default to false for performance
         };
 
@@ -153,11 +159,8 @@ impl<F: FileSystem> JsBackend<F> {
         let fob_future = analysis::analyze_with_options(&options.entry_points, fob_options);
         let discovery_config = crate::file_discovery::DiscoveryConfig::default();
         let fs_clone = Arc::clone(&fs);
-        let discovery_future = crate::file_discovery::discover_source_files(
-            &options,
-            &discovery_config,
-            fs_clone,
-        );
+        let discovery_future =
+            crate::file_discovery::discover_source_files(&options, &discovery_config, fs_clone);
 
         // Wait for both to complete
         let (fob_result, discovered_files) = tokio::try_join!(
@@ -184,21 +187,24 @@ impl<F: FileSystem> JsBackend<F> {
         findings.extend(unreachable_findings);
 
         // NEW: Optionally collect unused symbols
-        let analyze_symbols = options.backend_options
+        let analyze_symbols = options
+            .backend_options
             .get("symbols")
             .or_else(|| options.backend_options.get("detect_unused_symbols")) // Backward compatibility
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
 
         let symbol_stats = if analyze_symbols {
-            let unused_symbols = fob_result.graph.unused_symbols().await
-                .map_err(|e| danny_core::Error::Backend {
+            let unused_symbols = fob_result.graph.unused_symbols().await.map_err(|e| {
+                danny_core::Error::Backend {
                     backend: "JavaScript".to_string(),
                     message: format!("Failed to get unused symbols: {}", e),
-                })?;
+                }
+            })?;
 
             for unused in unused_symbols {
-                let module = fob_result.graph
+                let module = fob_result
+                    .graph
                     .module(&unused.module_id)
                     .await
                     .map_err(|e| danny_core::Error::Backend {
@@ -231,7 +237,8 @@ impl<F: FileSystem> JsBackend<F> {
         };
 
         // NEW: Optionally detect code quality issues (code smells)
-        let detect_quality = options.backend_options
+        let detect_quality = options
+            .backend_options
             .get("quality")
             .or_else(|| options.backend_options.get("detect_quality")) // Backward compatibility
             .and_then(|v| v.as_bool())
@@ -246,75 +253,77 @@ impl<F: FileSystem> JsBackend<F> {
             let quality_config = &config.quality;
 
             // Validate configuration before running analysis
-            quality_config.validate().map_err(|e| danny_core::Error::Backend {
-                backend: "JavaScript".to_string(),
-                message: format!("Invalid quality configuration: {}", e),
-            })?;
+            quality_config
+                .validate()
+                .map_err(|e| danny_core::Error::Backend {
+                    backend: "JavaScript".to_string(),
+                    message: format!("Invalid quality configuration: {}", e),
+                })?;
 
             // Run quality analyzers with proper error conversion
-            let long_functions = QualityAnalyzer::detect_long_functions(
-                &fob_result.graph,
-                quality_config,
-            ).await.map_err(|e| danny_core::Error::Backend {
-                backend: "JavaScript".to_string(),
-                message: format!("Long function detection failed: {}", e),
-            })?;
+            let long_functions =
+                QualityAnalyzer::detect_long_functions(&fob_result.graph, quality_config)
+                    .await
+                    .map_err(|e| danny_core::Error::Backend {
+                        backend: "JavaScript".to_string(),
+                        message: format!("Long function detection failed: {}", e),
+                    })?;
 
-            let too_many_params = QualityAnalyzer::detect_too_many_parameters(
-                &fob_result.graph,
-                quality_config,
-            ).await.map_err(|e| danny_core::Error::Backend {
-                backend: "JavaScript".to_string(),
-                message: format!("Parameter count detection failed: {}", e),
-            })?;
+            let too_many_params =
+                QualityAnalyzer::detect_too_many_parameters(&fob_result.graph, quality_config)
+                    .await
+                    .map_err(|e| danny_core::Error::Backend {
+                        backend: "JavaScript".to_string(),
+                        message: format!("Parameter count detection failed: {}", e),
+                    })?;
 
-            let large_classes = QualityAnalyzer::detect_large_classes(
-                &fob_result.graph,
-                quality_config,
-            ).await.map_err(|e| danny_core::Error::Backend {
-                backend: "JavaScript".to_string(),
-                message: format!("Large class detection failed: {}", e),
-            })?;
+            let large_classes =
+                QualityAnalyzer::detect_large_classes(&fob_result.graph, quality_config)
+                    .await
+                    .map_err(|e| danny_core::Error::Backend {
+                        backend: "JavaScript".to_string(),
+                        message: format!("Large class detection failed: {}", e),
+                    })?;
 
-            let too_many_methods = QualityAnalyzer::detect_too_many_methods(
-                &fob_result.graph,
-                quality_config,
-            ).await.map_err(|e| danny_core::Error::Backend {
-                backend: "JavaScript".to_string(),
-                message: format!("Too many methods detection failed: {}", e),
-            })?;
+            let too_many_methods =
+                QualityAnalyzer::detect_too_many_methods(&fob_result.graph, quality_config)
+                    .await
+                    .map_err(|e| danny_core::Error::Backend {
+                        backend: "JavaScript".to_string(),
+                        message: format!("Too many methods detection failed: {}", e),
+                    })?;
 
-            let too_many_fields = QualityAnalyzer::detect_too_many_fields(
-                &fob_result.graph,
-                quality_config,
-            ).await.map_err(|e| danny_core::Error::Backend {
-                backend: "JavaScript".to_string(),
-                message: format!("Too many fields detection failed: {}", e),
-            })?;
+            let too_many_fields =
+                QualityAnalyzer::detect_too_many_fields(&fob_result.graph, quality_config)
+                    .await
+                    .map_err(|e| danny_core::Error::Backend {
+                        backend: "JavaScript".to_string(),
+                        message: format!("Too many fields detection failed: {}", e),
+                    })?;
 
-            let complex_conditionals = QualityAnalyzer::detect_complex_conditionals(
-                &fob_result.graph,
-                quality_config,
-            ).await.map_err(|e| danny_core::Error::Backend {
-                backend: "JavaScript".to_string(),
-                message: format!("Complex conditional detection failed: {}", e),
-            })?;
+            let complex_conditionals =
+                QualityAnalyzer::detect_complex_conditionals(&fob_result.graph, quality_config)
+                    .await
+                    .map_err(|e| danny_core::Error::Backend {
+                        backend: "JavaScript".to_string(),
+                        message: format!("Complex conditional detection failed: {}", e),
+                    })?;
 
-            let deep_nesting = QualityAnalyzer::detect_deep_nesting(
-                &fob_result.graph,
-                quality_config,
-            ).await.map_err(|e| danny_core::Error::Backend {
-                backend: "JavaScript".to_string(),
-                message: format!("Deep nesting detection failed: {}", e),
-            })?;
+            let deep_nesting =
+                QualityAnalyzer::detect_deep_nesting(&fob_result.graph, quality_config)
+                    .await
+                    .map_err(|e| danny_core::Error::Backend {
+                        backend: "JavaScript".to_string(),
+                        message: format!("Deep nesting detection failed: {}", e),
+                    })?;
 
-            let multiple_returns = QualityAnalyzer::detect_multiple_returns(
-                &fob_result.graph,
-                quality_config,
-            ).await.map_err(|e| danny_core::Error::Backend {
-                backend: "JavaScript".to_string(),
-                message: format!("Multiple returns detection failed: {}", e),
-            })?;
+            let multiple_returns =
+                QualityAnalyzer::detect_multiple_returns(&fob_result.graph, quality_config)
+                    .await
+                    .map_err(|e| danny_core::Error::Backend {
+                        backend: "JavaScript".to_string(),
+                        message: format!("Multiple returns detection failed: {}", e),
+                    })?;
 
             code_smell_findings.extend(long_functions);
             code_smell_findings.extend(too_many_params);
@@ -333,7 +342,12 @@ impl<F: FileSystem> JsBackend<F> {
             let mut by_severity: HashMap<SmellSeverity, usize> = HashMap::new();
 
             for finding in &code_smell_findings {
-                if let Finding::CodeSmell { smell_type, severity, .. } = finding {
+                if let Finding::CodeSmell {
+                    smell_type,
+                    severity,
+                    ..
+                } = finding
+                {
                     *by_type.entry(smell_type.clone()).or_insert(0) += 1;
                     *by_severity.entry(*severity).or_insert(0) += 1;
                 }
@@ -349,22 +363,37 @@ impl<F: FileSystem> JsBackend<F> {
         }
 
         // Collect statistics
-        let modules = fob_result.graph.modules().await.map_err(|e| danny_core::Error::Backend {
-            backend: "JavaScript".to_string(),
-            message: format!("Failed to get modules: {}", e),
+        let modules = fob_result
+            .graph
+            .modules()
+            .await
+            .map_err(|e| danny_core::Error::Backend {
+                backend: "JavaScript".to_string(),
+                message: format!("Failed to get modules: {}", e),
+            })?;
+        let unused_exports =
+            fob_result
+                .graph
+                .unused_exports()
+                .await
+                .map_err(|e| danny_core::Error::Backend {
+                    backend: "JavaScript".to_string(),
+                    message: format!("Failed to get unused exports: {}", e),
+                })?;
+        let unreachable_modules = fob_result.graph.unreachable_modules().await.map_err(|e| {
+            danny_core::Error::Backend {
+                backend: "JavaScript".to_string(),
+                message: format!("Failed to get unreachable modules: {}", e),
+            }
         })?;
-        let unused_exports = fob_result.graph.unused_exports().await.map_err(|e| danny_core::Error::Backend {
-            backend: "JavaScript".to_string(),
-            message: format!("Failed to get unused exports: {}", e),
-        })?;
-        let unreachable_modules = fob_result.graph.unreachable_modules().await.map_err(|e| danny_core::Error::Backend {
-            backend: "JavaScript".to_string(),
-            message: format!("Failed to get unreachable modules: {}", e),
-        })?;
-        let framework_exports = fob_result.graph.framework_used_exports().await.map_err(|e| danny_core::Error::Backend {
-            backend: "JavaScript".to_string(),
-            message: format!("Failed to get framework exports: {}", e),
-        })?;
+        let framework_exports = fob_result
+            .graph
+            .framework_used_exports()
+            .await
+            .map_err(|e| danny_core::Error::Backend {
+                backend: "JavaScript".to_string(),
+                message: format!("Failed to get framework exports: {}", e),
+            })?;
 
         // Phase 1: Collect dynamic import targets for side effect analysis
         let dynamic_import_targets: HashSet<PathBuf> = modules
@@ -393,16 +422,18 @@ impl<F: FileSystem> JsBackend<F> {
             let safe_to_delete = matches!(safety, SafetyAssessment::SafeToDelete);
 
             // Update the finding with enriched metadata
-            if let Some(finding) = findings.iter_mut().find(|f| {
-                matches!(f, Finding::UnreachableModule { path: p, .. } if *p == module.path)
-            }) {
-                if let Finding::UnreachableModule { metadata, .. } = finding {
-                    metadata.safe_to_delete = safe_to_delete;
-                    metadata.safety_assessment = safety.clone();
-                }
+            if let Some(Finding::UnreachableModule { metadata, .. }) = findings.iter_mut().find(
+                |f| matches!(f, Finding::UnreachableModule { path: p, .. } if *p == module.path),
+            ) {
+                metadata.safe_to_delete = safe_to_delete;
+                metadata.safety_assessment = safety.clone();
             }
 
-            enriched_unreachable.push((module.path.clone(), module.original_size, module.has_side_effects));
+            enriched_unreachable.push((
+                module.path.clone(),
+                module.original_size,
+                module.has_side_effects,
+            ));
         }
 
         // Phase 1: Calculate bundle size impact
@@ -420,7 +451,12 @@ impl<F: FileSystem> JsBackend<F> {
                     if matches!(imp.kind, fob::graph::ImportKind::Dynamic) {
                         imp.resolved_to.as_ref().and_then(|id| {
                             modules.iter().find(|m2| &m2.id == id).map(|target_module| {
-                                (m.path.clone(), target_module.path.clone(), imp.source.clone(), imp.is_external())
+                                (
+                                    m.path.clone(),
+                                    target_module.path.clone(),
+                                    imp.source.clone(),
+                                    imp.is_external(),
+                                )
                             })
                         })
                     } else {
@@ -438,17 +474,18 @@ impl<F: FileSystem> JsBackend<F> {
         // Phase 1: Categorize unused exports by type-only vs runtime
         let mut analyzer_unused_exports: Vec<AnalyzerUnusedExport> = Vec::new();
         for unused in &unused_exports {
-            let module = fob_result.graph
+            let module = fob_result
+                .graph
                 .module(&unused.module_id)
                 .await
                 .ok()
                 .flatten();
-            
+
             if let Some(module) = module {
                 if Self::is_virtual_path(&module.path) {
                     continue;
                 }
-                
+
                 analyzer_unused_exports.push(AnalyzerUnusedExport {
                     module: module.path.clone(),
                     name: unused.export.name.clone(),
@@ -472,7 +509,10 @@ impl<F: FileSystem> JsBackend<F> {
                 .iter()
                 .filter_map(|imp| {
                     imp.resolved_to.as_ref().and_then(|id| {
-                        modules.iter().find(|m2| &m2.id == id).map(|m2| m2.path.clone())
+                        modules
+                            .iter()
+                            .find(|m2| &m2.id == id)
+                            .map(|m2| m2.path.clone())
                     })
                 })
                 .filter(|p| !Self::is_virtual_path(p))
@@ -490,22 +530,30 @@ impl<F: FileSystem> JsBackend<F> {
         // Add circular dependency findings
         for circ_dep in &circular_deps {
             // Check if all modules in cycle are unreachable
-            let all_unreachable = circ_dep.cycle.iter().all(|path| {
-                unreachable_modules.iter().any(|m| m.path == *path)
-            });
+            let all_unreachable = circ_dep
+                .cycle
+                .iter()
+                .all(|path| unreachable_modules.iter().any(|m| m.path == *path));
 
             // Calculate total size
-            let total_size: usize = circ_dep.cycle.iter()
+            let total_size: usize = circ_dep
+                .cycle
+                .iter()
                 .filter_map(|path| {
-                    modules.iter().find(|m| m.path == *path).map(|m| m.original_size)
+                    modules
+                        .iter()
+                        .find(|m| m.path == *path)
+                        .map(|m| m.original_size)
                 })
                 .sum();
 
-            findings.push(Finding::CircularDependency(danny_core::types::CircularDependency {
-                cycle: circ_dep.cycle.clone(),
-                all_unreachable,
-                total_size,
-            }));
+            findings.push(Finding::CircularDependency(
+                danny_core::types::CircularDependency {
+                    cycle: circ_dep.cycle.clone(),
+                    all_unreachable,
+                    total_size,
+                },
+            ));
         }
 
         // Count unreachable files separately from unreachable modules
@@ -515,78 +563,90 @@ impl<F: FileSystem> JsBackend<F> {
             .count();
 
         // NEW: Class Member Analysis (opt-in via detect_class_members)
-        let detect_class_members = options.backend_options
+        let detect_class_members = options
+            .backend_options
             .get("detect_class_members")
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
 
-        let (private_class_findings, public_class_findings, class_member_stats) = if detect_class_members {
-            let unused_private = fob_result.graph.unused_private_class_members().await
+        let (private_class_findings, public_class_findings, class_member_stats) =
+            if detect_class_members {
+                let unused_private = fob_result
+                    .graph
+                    .unused_private_class_members()
+                    .await
+                    .map_err(|e| danny_core::Error::Backend {
+                        backend: "JavaScript".to_string(),
+                        message: format!("Failed to get unused private class members: {}", e),
+                    })?;
+
+                let unused_public = fob_result
+                    .graph
+                    .unused_public_class_members()
+                    .await
+                    .map_err(|e| danny_core::Error::Backend {
+                        backend: "JavaScript".to_string(),
+                        message: format!("Failed to get unused public class members: {}", e),
+                    })?;
+
+                let private_findings = ClassMemberAnalyzer::convert_private_members(
+                    &fob_result.graph,
+                    &unused_private,
+                )
+                .await
                 .map_err(|e| danny_core::Error::Backend {
                     backend: "JavaScript".to_string(),
-                    message: format!("Failed to get unused private class members: {}", e),
+                    message: format!("Failed to convert private class members: {}", e),
                 })?;
 
-            let unused_public = fob_result.graph.unused_public_class_members().await
-                .map_err(|e| danny_core::Error::Backend {
-                    backend: "JavaScript".to_string(),
-                    message: format!("Failed to get unused public class members: {}", e),
-                })?;
+                let public_findings =
+                    ClassMemberAnalyzer::convert_public_members(&fob_result.graph, &unused_public)
+                        .await
+                        .map_err(|e| danny_core::Error::Backend {
+                            backend: "JavaScript".to_string(),
+                            message: format!("Failed to convert public class members: {}", e),
+                        })?;
 
-            let private_findings = ClassMemberAnalyzer::convert_private_members(
-                &fob_result.graph,
-                &unused_private,
-            ).await.map_err(|e| danny_core::Error::Backend {
-                backend: "JavaScript".to_string(),
-                message: format!("Failed to convert private class members: {}", e),
-            })?;
+                let total_private: usize = unused_private.values().map(|v| v.len()).sum();
+                let total_public = unused_public.len();
+                let total_members = total_private + total_public;
 
-            let public_findings = ClassMemberAnalyzer::convert_public_members(
-                &fob_result.graph,
-                &unused_public,
-            ).await.map_err(|e| danny_core::Error::Backend {
-                backend: "JavaScript".to_string(),
-                message: format!("Failed to convert public class members: {}", e),
-            })?;
+                let stats = Some(ClassMemberAnalyzer::build_stats(
+                    total_private,
+                    total_public,
+                    total_members,
+                ));
 
-            let total_private: usize = unused_private.values().map(|v| v.len()).sum();
-            let total_public = unused_public.len();
-            let total_members = total_private + total_public;
-
-            let stats = Some(ClassMemberAnalyzer::build_stats(
-                total_private,
-                total_public,
-                total_members,
-            ));
-
-            (private_findings, public_findings, stats)
-        } else {
-            (Vec::new(), Vec::new(), None)
-        };
+                (private_findings, public_findings, stats)
+            } else {
+                (Vec::new(), Vec::new(), None)
+            };
 
         findings.extend(private_class_findings);
         findings.extend(public_class_findings);
 
         // NEW: Enum Analysis (opt-in via detect_enum_members)
-        let detect_enum_members = options.backend_options
+        let detect_enum_members = options
+            .backend_options
             .get("detect_enum_members")
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
 
         let (enum_findings, enum_stats) = if detect_enum_members {
-            let unused_enums = fob_result.graph.unused_enum_members().await
-                .map_err(|e| danny_core::Error::Backend {
+            let unused_enums = fob_result.graph.unused_enum_members().await.map_err(|e| {
+                danny_core::Error::Backend {
                     backend: "JavaScript".to_string(),
                     message: format!("Failed to get unused enum members: {}", e),
-                })?;
-
-            let enum_findings = EnumMemberAnalyzer::convert_unused_members(
-                &fob_result.graph,
-                &unused_enums,
-            ).await.map_err(|e| danny_core::Error::Backend {
-                backend: "JavaScript".to_string(),
-                message: format!("Failed to convert enum members: {}", e),
+                }
             })?;
+
+            let enum_findings =
+                EnumMemberAnalyzer::convert_unused_members(&fob_result.graph, &unused_enums)
+                    .await
+                    .map_err(|e| danny_core::Error::Backend {
+                        backend: "JavaScript".to_string(),
+                        message: format!("Failed to convert enum members: {}", e),
+                    })?;
 
             let total_enums = unused_enums.len();
             let total_members: usize = unused_enums.values().map(|v| v.len()).sum();
@@ -606,7 +666,8 @@ impl<F: FileSystem> JsBackend<F> {
         findings.extend(enum_findings);
 
         // NEW: NPM Dependencies (opt-in via detect_npm_dependencies)
-        let detect_npm_dependencies = options.backend_options
+        let detect_npm_dependencies = options
+            .backend_options
             .get("detect_npm_dependencies")
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
@@ -616,22 +677,31 @@ impl<F: FileSystem> JsBackend<F> {
             if fs.exists(&package_json_path).await? {
                 // Parse package.json using serde_json since PackageJson implements Deserialize
                 let package_json_content = fs.read_to_string(&package_json_path).await?;
-                let package_json: fob::graph::PackageJson = serde_json::from_str(&package_json_content)
-                    .map_err(|e| danny_core::Error::Backend {
-                        backend: "JavaScript".to_string(),
-                        message: format!("Failed to parse package.json: {}", e),
+                let package_json: fob::graph::PackageJson =
+                    serde_json::from_str(&package_json_content).map_err(|e| {
+                        danny_core::Error::Backend {
+                            backend: "JavaScript".to_string(),
+                            message: format!("Failed to parse package.json: {}", e),
+                        }
                     })?;
 
-                let unused_deps = fob_result.graph.unused_npm_dependencies(
-                    &package_json,
-                    true, // include_dev
-                    false, // include_peer
-                ).await.map_err(|e| danny_core::Error::Backend {
-                    backend: "JavaScript".to_string(),
-                    message: format!("Failed to get unused npm dependencies: {}", e),
-                })?;
+                let unused_deps = fob_result
+                    .graph
+                    .unused_npm_dependencies(
+                        &package_json,
+                        true,  // include_dev
+                        false, // include_peer
+                    )
+                    .await
+                    .map_err(|e| danny_core::Error::Backend {
+                        backend: "JavaScript".to_string(),
+                        message: format!("Failed to get unused npm dependencies: {}", e),
+                    })?;
 
-                let coverage = fob_result.graph.dependency_coverage(&package_json).await
+                let coverage = fob_result
+                    .graph
+                    .dependency_coverage(&package_json)
+                    .await
                     .map_err(|e| danny_core::Error::Backend {
                         backend: "JavaScript".to_string(),
                         message: format!("Failed to get dependency coverage: {}", e),
@@ -651,154 +721,196 @@ impl<F: FileSystem> JsBackend<F> {
         findings.extend(npm_findings);
 
         // NEW: Import Patterns (opt-in via detect_import_patterns)
-        let detect_import_patterns = options.backend_options
+        let detect_import_patterns = options
+            .backend_options
             .get("detect_import_patterns")
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
 
-        let (side_effect_findings, namespace_findings, type_only_import_findings) = if detect_import_patterns {
-            let side_effects = fob_result.graph.side_effect_only_imports().await
-                .map_err(|e| danny_core::Error::Backend {
-                    backend: "JavaScript".to_string(),
-                    message: format!("Failed to get side-effect-only imports: {}", e),
+        let (side_effect_findings, namespace_findings, type_only_import_findings) =
+            if detect_import_patterns {
+                let side_effects =
+                    fob_result
+                        .graph
+                        .side_effect_only_imports()
+                        .await
+                        .map_err(|e| danny_core::Error::Backend {
+                            backend: "JavaScript".to_string(),
+                            message: format!("Failed to get side-effect-only imports: {}", e),
+                        })?;
+
+                let namespaces = fob_result.graph.namespace_imports().await.map_err(|e| {
+                    danny_core::Error::Backend {
+                        backend: "JavaScript".to_string(),
+                        message: format!("Failed to get namespace imports: {}", e),
+                    }
                 })?;
 
-            let namespaces = fob_result.graph.namespace_imports().await
-                .map_err(|e| danny_core::Error::Backend {
-                    backend: "JavaScript".to_string(),
-                    message: format!("Failed to get namespace imports: {}", e),
-                })?;
-
-            let type_only_imports = fob_result.graph.type_only_imports().await
-                .map_err(|e| danny_core::Error::Backend {
-                    backend: "JavaScript".to_string(),
-                    message: format!("Failed to get type-only imports: {}", e),
-                })?;
-
-            let mut side_effect_findings = Vec::new();
-            let mut namespace_findings = Vec::new();
-            let mut type_only_import_findings = Vec::new();
-
-            for side_effect in &side_effects {
-                let module = fob_result.graph.module(&side_effect.importer).await
-                    .map_err(|e| danny_core::Error::Backend {
-                        backend: "JavaScript".to_string(),
-                        message: format!("Failed to get module: {}", e),
-                    })?
-                    .ok_or_else(|| danny_core::Error::Backend {
-                        backend: "JavaScript".to_string(),
-                        message: format!("Module not found: {:?}", side_effect.importer),
+                let type_only_imports =
+                    fob_result.graph.type_only_imports().await.map_err(|e| {
+                        danny_core::Error::Backend {
+                            backend: "JavaScript".to_string(),
+                            message: format!("Failed to get type-only imports: {}", e),
+                        }
                     })?;
 
-                if Self::is_virtual_path(&module.path) {
-                    continue;
+                let mut side_effect_findings = Vec::new();
+                let mut namespace_findings = Vec::new();
+                let mut type_only_import_findings = Vec::new();
+
+                for side_effect in &side_effects {
+                    let module = fob_result
+                        .graph
+                        .module(&side_effect.importer)
+                        .await
+                        .map_err(|e| danny_core::Error::Backend {
+                            backend: "JavaScript".to_string(),
+                            message: format!("Failed to get module: {}", e),
+                        })?
+                        .ok_or_else(|| danny_core::Error::Backend {
+                            backend: "JavaScript".to_string(),
+                            message: format!("Module not found: {:?}", side_effect.importer),
+                        })?;
+
+                    if Self::is_virtual_path(&module.path) {
+                        continue;
+                    }
+
+                    let resolved_to = if let Some(id) = &side_effect.resolved_to {
+                        fob_result
+                            .graph
+                            .module(id)
+                            .await
+                            .ok()
+                            .flatten()
+                            .map(|m| m.path)
+                    } else {
+                        None
+                    };
+
+                    side_effect_findings.push(Finding::SideEffectOnlyImport {
+                        module: module.path.clone(),
+                        source: side_effect.source.clone(),
+                        resolved_to,
+                        span: Self::convert_span(&side_effect.span),
+                    });
                 }
 
-                let resolved_to = if let Some(id) = &side_effect.resolved_to {
-                    fob_result.graph.module(id).await.ok().flatten()
-                        .map(|m| m.path)
-                } else {
-                    None
-                };
+                for namespace in &namespaces {
+                    let module = fob_result
+                        .graph
+                        .module(&namespace.importer)
+                        .await
+                        .map_err(|e| danny_core::Error::Backend {
+                            backend: "JavaScript".to_string(),
+                            message: format!("Failed to get module: {}", e),
+                        })?
+                        .ok_or_else(|| danny_core::Error::Backend {
+                            backend: "JavaScript".to_string(),
+                            message: format!("Module not found: {:?}", namespace.importer),
+                        })?;
 
-                side_effect_findings.push(Finding::SideEffectOnlyImport {
-                    module: module.path.clone(),
-                    source: side_effect.source.clone(),
-                    resolved_to: resolved_to,
-                    span: Self::convert_span(&side_effect.span),
-                });
-            }
+                    if Self::is_virtual_path(&module.path) {
+                        continue;
+                    }
 
-            for namespace in &namespaces {
-                let module = fob_result.graph.module(&namespace.importer).await
-                    .map_err(|e| danny_core::Error::Backend {
-                        backend: "JavaScript".to_string(),
-                        message: format!("Failed to get module: {}", e),
-                    })?
-                    .ok_or_else(|| danny_core::Error::Backend {
-                        backend: "JavaScript".to_string(),
-                        message: format!("Module not found: {:?}", namespace.importer),
-                    })?;
+                    let resolved_to = if let Some(id) = &namespace.resolved_to {
+                        fob_result
+                            .graph
+                            .module(id)
+                            .await
+                            .ok()
+                            .flatten()
+                            .map(|m| m.path)
+                    } else {
+                        None
+                    };
 
-                if Self::is_virtual_path(&module.path) {
-                    continue;
+                    namespace_findings.push(Finding::NamespaceImport {
+                        module: module.path.clone(),
+                        namespace_name: namespace.namespace_name.clone(),
+                        source: namespace.source.clone(),
+                        resolved_to,
+                    });
                 }
 
-                let resolved_to = if let Some(id) = &namespace.resolved_to {
-                    fob_result.graph.module(id).await.ok().flatten()
-                        .map(|m| m.path)
-                } else {
-                    None
-                };
+                for type_import in &type_only_imports {
+                    let module = fob_result
+                        .graph
+                        .module(&type_import.importer)
+                        .await
+                        .map_err(|e| danny_core::Error::Backend {
+                            backend: "JavaScript".to_string(),
+                            message: format!("Failed to get module: {}", e),
+                        })?
+                        .ok_or_else(|| danny_core::Error::Backend {
+                            backend: "JavaScript".to_string(),
+                            message: format!("Module not found: {:?}", type_import.importer),
+                        })?;
 
-                namespace_findings.push(Finding::NamespaceImport {
-                    module: module.path.clone(),
-                    namespace_name: namespace.namespace_name.clone(),
-                    source: namespace.source.clone(),
-                    resolved_to: resolved_to,
-                });
-            }
+                    if Self::is_virtual_path(&module.path) {
+                        continue;
+                    }
 
-            for type_import in &type_only_imports {
-                let module = fob_result.graph.module(&type_import.importer).await
-                    .map_err(|e| danny_core::Error::Backend {
-                        backend: "JavaScript".to_string(),
-                        message: format!("Failed to get module: {}", e),
-                    })?
-                    .ok_or_else(|| danny_core::Error::Backend {
-                        backend: "JavaScript".to_string(),
-                        message: format!("Module not found: {:?}", type_import.importer),
-                    })?;
+                    let specifiers: Vec<String> = type_import
+                        .specifiers
+                        .iter()
+                        .map(|s| match s {
+                            fob::graph::ImportSpecifier::Named(name) => name.clone(),
+                            fob::graph::ImportSpecifier::Default => "default".to_string(),
+                            fob::graph::ImportSpecifier::Namespace(name) => name.clone(),
+                        })
+                        .collect();
 
-                if Self::is_virtual_path(&module.path) {
-                    continue;
+                    type_only_import_findings.push(Finding::TypeOnlyImport {
+                        module: module.path.clone(),
+                        source: type_import.source.clone(),
+                        specifiers,
+                        span: Self::convert_span(&type_import.span),
+                    });
                 }
 
-                let specifiers: Vec<String> = type_import.specifiers.iter()
-                    .filter_map(|s| match s {
-                        fob::graph::ImportSpecifier::Named(name) => Some(name.clone()),
-                        fob::graph::ImportSpecifier::Default => Some("default".to_string()),
-                        fob::graph::ImportSpecifier::Namespace(name) => Some(name.clone()),
-                    })
-                    .collect();
-
-                type_only_import_findings.push(Finding::TypeOnlyImport {
-                    module: module.path.clone(),
-                    source: type_import.source.clone(),
-                    specifiers,
-                    span: Self::convert_span(&type_import.span),
-                });
-            }
-
-            (side_effect_findings, namespace_findings, type_only_import_findings)
-        } else {
-            (Vec::new(), Vec::new(), Vec::new())
-        };
+                (
+                    side_effect_findings,
+                    namespace_findings,
+                    type_only_import_findings,
+                )
+            } else {
+                (Vec::new(), Vec::new(), Vec::new())
+            };
 
         findings.extend(side_effect_findings);
         findings.extend(namespace_findings);
         findings.extend(type_only_import_findings);
 
         // NEW: Dead Code Modules (opt-in via detect_dead_code_modules)
-        let detect_dead_code_modules = options.backend_options
+        let detect_dead_code_modules = options
+            .backend_options
             .get("detect_dead_code_modules")
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
 
         let dead_code_findings = if detect_dead_code_modules {
             let mut dead_code_findings = Vec::new();
-            let all_modules = fob_result.graph.modules().await
-                .map_err(|e| danny_core::Error::Backend {
-                    backend: "JavaScript".to_string(),
-                    message: format!("Failed to get modules: {}", e),
-                })?;
+            let all_modules =
+                fob_result
+                    .graph
+                    .modules()
+                    .await
+                    .map_err(|e| danny_core::Error::Backend {
+                        backend: "JavaScript".to_string(),
+                        message: format!("Failed to get modules: {}", e),
+                    })?;
 
             for module in &all_modules {
                 if Self::is_virtual_path(&module.path) {
                     continue;
                 }
 
-                let is_dead = fob_result.graph.is_reachable_only_through_dead_code(&module.id).await
+                let is_dead = fob_result
+                    .graph
+                    .is_reachable_only_through_dead_code(&module.id)
+                    .await
                     .map_err(|e| danny_core::Error::Backend {
                         backend: "JavaScript".to_string(),
                         message: format!("Failed to check dead code status: {}", e),
@@ -835,18 +947,13 @@ impl<F: FileSystem> JsBackend<F> {
                 }
 
                 // Get chains to this module
-                let chains_result = fob_result
-                    .graph
-                    .dependency_chains_to(&module.id)
-                    .await;
+                let chains_result = fob_result.graph.dependency_chains_to(&module.id).await;
 
                 if let Ok(chains) = chains_result {
                     // Only report chains that are deeper than 5 levels
                     // to avoid too many findings
-                    let deep_chains: Vec<_> = chains
-                        .into_iter()
-                        .filter(|chain| chain.depth > 5)
-                        .collect();
+                    let deep_chains: Vec<_> =
+                        chains.into_iter().filter(|chain| chain.depth > 5).collect();
 
                     if !deep_chains.is_empty() {
                         match DependencyChainAnalyzer::convert_chains(
@@ -882,31 +989,40 @@ impl<F: FileSystem> JsBackend<F> {
             dynamic_imports_count: dynamic_imports.len(),
             circular_dependencies_count: circular_deps_count,
             type_only_unused_exports_count: type_only_count,
-            unused_private_class_members_count: findings.iter()
+            unused_private_class_members_count: findings
+                .iter()
                 .filter(|f| matches!(f, Finding::UnusedPrivateClassMember { .. }))
                 .count(),
-            unused_public_class_members_count: findings.iter()
+            unused_public_class_members_count: findings
+                .iter()
                 .filter(|f| matches!(f, Finding::UnusedPublicClassMember { .. }))
                 .count(),
-            unused_enum_members_count: findings.iter()
+            unused_enum_members_count: findings
+                .iter()
                 .filter(|f| matches!(f, Finding::UnusedEnumMember { .. }))
                 .count(),
-            unused_npm_dependencies_count: findings.iter()
+            unused_npm_dependencies_count: findings
+                .iter()
                 .filter(|f| matches!(f, Finding::UnusedNpmDependency { .. }))
                 .count(),
-            side_effect_only_imports_count: findings.iter()
+            side_effect_only_imports_count: findings
+                .iter()
                 .filter(|f| matches!(f, Finding::SideEffectOnlyImport { .. }))
                 .count(),
-            namespace_imports_count: findings.iter()
+            namespace_imports_count: findings
+                .iter()
                 .filter(|f| matches!(f, Finding::NamespaceImport { .. }))
                 .count(),
-            type_only_imports_count: findings.iter()
+            type_only_imports_count: findings
+                .iter()
                 .filter(|f| matches!(f, Finding::TypeOnlyImport { .. }))
                 .count(),
-            dead_code_modules_count: findings.iter()
+            dead_code_modules_count: findings
+                .iter()
                 .filter(|f| matches!(f, Finding::DeadCodeModule { .. }))
                 .count(),
-            dependency_chains_count: findings.iter()
+            dependency_chains_count: findings
+                .iter()
                 .filter(|f| matches!(f, Finding::DependencyChain { .. }))
                 .count(),
             class_member_stats,
@@ -916,7 +1032,8 @@ impl<F: FileSystem> JsBackend<F> {
             ignored_findings_breakdown: None, // CLI will update this during filtering
             duration_ms: start.elapsed().as_millis() as u64,
             code_quality_stats: code_smell_stats,
-            code_smells_count: findings.iter()
+            code_smells_count: findings
+                .iter()
                 .filter(|f| matches!(f, Finding::CodeSmell { .. }))
                 .count(),
         };
@@ -953,11 +1070,14 @@ impl<F: FileSystem> JsBackend<F> {
         let mut findings = Vec::new();
 
         // Convert each module to a Module finding
-        let modules = graph.modules().await.map_err(|e| danny_core::Error::Backend {
-            backend: "JavaScript".to_string(),
-            message: format!("Failed to get modules: {}", e),
-        })?;
-        
+        let modules = graph
+            .modules()
+            .await
+            .map_err(|e| danny_core::Error::Backend {
+                backend: "JavaScript".to_string(),
+                message: format!("Failed to get modules: {}", e),
+            })?;
+
         for module in modules {
             if Self::is_virtual_path(&module.path) {
                 continue;
@@ -1000,10 +1120,14 @@ impl<F: FileSystem> JsBackend<F> {
         }
 
         // NEW: Detect unused exports
-        let unused_exports = graph.unused_exports().await.map_err(|e| danny_core::Error::Backend {
-            backend: "JavaScript".to_string(),
-            message: format!("Failed to get unused exports: {}", e),
-        })?;
+        let unused_exports =
+            graph
+                .unused_exports()
+                .await
+                .map_err(|e| danny_core::Error::Backend {
+                    backend: "JavaScript".to_string(),
+                    message: format!("Failed to get unused exports: {}", e),
+                })?;
 
         for unused in unused_exports {
             let module = graph
@@ -1032,11 +1156,15 @@ impl<F: FileSystem> JsBackend<F> {
         // NEW: Detect unreachable modules
         // Note: Safety assessment and bundle impact will be calculated in analyze_async
         // after we have all the data (dynamic imports, etc.)
-        let unreachable_modules = graph.unreachable_modules().await.map_err(|e| danny_core::Error::Backend {
-            backend: "JavaScript".to_string(),
-            message: format!("Failed to get unreachable modules: {}", e),
-        })?;
-        
+        let unreachable_modules =
+            graph
+                .unreachable_modules()
+                .await
+                .map_err(|e| danny_core::Error::Backend {
+                    backend: "JavaScript".to_string(),
+                    message: format!("Failed to get unreachable modules: {}", e),
+                })?;
+
         for module in unreachable_modules {
             if Self::is_virtual_path(&module.path) {
                 continue;
@@ -1055,11 +1183,15 @@ impl<F: FileSystem> JsBackend<F> {
         }
 
         // NEW: Report framework-used exports (for transparency)
-        let framework_exports = graph.framework_used_exports().await.map_err(|e| danny_core::Error::Backend {
-            backend: "JavaScript".to_string(),
-            message: format!("Failed to get framework exports: {}", e),
-        })?;
-        
+        let framework_exports =
+            graph
+                .framework_used_exports()
+                .await
+                .map_err(|e| danny_core::Error::Backend {
+                    backend: "JavaScript".to_string(),
+                    message: format!("Failed to get framework exports: {}", e),
+                })?;
+
         for (module_id, export) in framework_exports {
             let module = graph
                 .module(&module_id)
@@ -1134,7 +1266,10 @@ impl<F: FileSystem> JsBackend<F> {
     }
 
     /// Converts Fob's SymbolSpan to Danny's SymbolSpan (with file path from module).
-    fn convert_symbol_span(span: &fob::graph::SymbolSpan, file: &std::path::Path) -> danny_core::types::SymbolSpan {
+    fn convert_symbol_span(
+        span: &fob::graph::SymbolSpan,
+        file: &std::path::Path,
+    ) -> danny_core::types::SymbolSpan {
         danny_core::types::SymbolSpan {
             file: file.to_path_buf(),
             line: span.line,
@@ -1144,11 +1279,15 @@ impl<F: FileSystem> JsBackend<F> {
     }
 
     /// Converts Fob's SymbolStatistics to Danny's SymbolStats.
-    fn convert_symbol_stats(stats: &fob::graph::SymbolStatistics) -> danny_core::types::SymbolStats {
+    fn convert_symbol_stats(
+        stats: &fob::graph::SymbolStatistics,
+    ) -> danny_core::types::SymbolStats {
         danny_core::types::SymbolStats {
             total_symbols: stats.total_symbols,
             unused_symbols: stats.unused_symbols,
-            by_kind: stats.by_kind.iter()
+            by_kind: stats
+                .by_kind
+                .iter()
                 .map(|(kind, count)| (Self::convert_symbol_kind(kind), *count))
                 .collect(),
         }
@@ -1163,11 +1302,15 @@ impl<F: FileSystem> JsBackend<F> {
             Err(_) => {
                 // Fallback to "Unknown" if detection fails
                 return "Unknown".to_string();
-                }
+            }
         };
 
         // Extract imports
-        let imports: Vec<String> = module.imports.iter().map(|imp| imp.source.clone()).collect();
+        let imports: Vec<String> = module
+            .imports
+            .iter()
+            .map(|imp| imp.source.clone())
+            .collect();
 
         // Detect from imports
         let results = detector.detect_from_imports(&imports);
@@ -1222,7 +1365,8 @@ impl<F: FileSystem> JsBackend<F> {
         }
 
         // Combine results, preferring import-based detection
-        let mut detected_frameworks: std::collections::HashSet<String> = std::collections::HashSet::new();
+        let mut detected_frameworks: std::collections::HashSet<String> =
+            std::collections::HashSet::new();
         for result in results {
             detected_frameworks.insert(result.framework);
         }
@@ -1232,7 +1376,6 @@ impl<F: FileSystem> JsBackend<F> {
 
         detected_frameworks.into_iter().collect()
     }
-
 }
 
 impl<F: FileSystem> LanguageBackend for JsBackend<F> {
@@ -1248,19 +1391,23 @@ impl<F: FileSystem> LanguageBackend for JsBackend<F> {
         // Run async analysis in the runtime
         self.runtime.block_on(async {
             // Create filesystem scoped to project root for this analysis
-            let fs = Arc::new(
-                NativeFileSystem::new(&options.project_root).map_err(|e| danny_core::Error::Backend {
+            let fs = Arc::new(NativeFileSystem::new(&options.project_root).map_err(|e| {
+                danny_core::Error::Backend {
                     backend: "JavaScript".to_string(),
                     message: format!("Failed to create filesystem: {}", e),
-                })?
-            );
+                }
+            })?);
 
             // Validate that entry points exist using FileSystem abstraction
             for entry in &options.entry_points {
-                if !fs.exists(entry).await.map_err(|e| danny_core::Error::Backend {
-                    backend: "JavaScript".to_string(),
-                    message: format!("Failed to check if entry point exists: {}", e),
-                })? {
+                if !fs
+                    .exists(entry)
+                    .await
+                    .map_err(|e| danny_core::Error::Backend {
+                        backend: "JavaScript".to_string(),
+                        message: format!("Failed to check if entry point exists: {}", e),
+                    })?
+                {
                     return Err(danny_core::Error::EntryPointNotFound {
                         path: entry.clone(),
                     });

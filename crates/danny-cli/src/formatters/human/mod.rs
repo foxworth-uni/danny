@@ -1,20 +1,20 @@
 //! Human-readable formatter for analysis results.
 
-mod files;
-mod exports;
-mod types;
-mod symbols;
-mod dependencies;
-mod imports;
 mod circular;
-mod quality;
+mod dependencies;
+mod exports;
+mod files;
 mod framework;
+mod imports;
+mod quality;
+mod symbols;
+mod types;
 
 #[cfg(test)]
 mod tests;
 
-use danny_core::{AnalysisResult, Finding, Category};
 use danny_core::types::CodeSmellType;
+use danny_core::{AnalysisResult, Category, Finding};
 use std::collections::HashMap;
 
 pub struct HumanFormatter;
@@ -43,7 +43,10 @@ pub fn print_results(result: &AnalysisResult) {
     let mut findings_by_category: HashMap<Category, Vec<&Finding>> = HashMap::new();
     for finding in &result.findings {
         let category = finding.category();
-        findings_by_category.entry(category).or_default().push(finding);
+        findings_by_category
+            .entry(category)
+            .or_default()
+            .push(finding);
     }
 
     // Print summary statistics by category
@@ -98,9 +101,7 @@ pub fn print_results(result: &AnalysisResult) {
     if let Some(stats) = &result.statistics.class_member_stats {
         println!(
             "  Class members: {} total ({} unused private, {} unused public)",
-            stats.total_members,
-            stats.unused_private,
-            stats.unused_public
+            stats.total_members, stats.unused_private, stats.unused_public
         );
     }
 
@@ -108,9 +109,7 @@ pub fn print_results(result: &AnalysisResult) {
     if let Some(stats) = &result.statistics.enum_stats {
         println!(
             "  Enums: {} total ({} members, {} unused)",
-            stats.total_enums,
-            stats.total_members,
-            stats.unused_members
+            stats.total_enums, stats.total_members, stats.unused_members
         );
     }
 
@@ -118,9 +117,7 @@ pub fn print_results(result: &AnalysisResult) {
     if let Some(stats) = &result.statistics.dependency_coverage_stats {
         println!(
             "  Dependency coverage: {:.1}% ({} used / {} declared)",
-            stats.coverage_percentage,
-            stats.total_used,
-            stats.total_declared
+            stats.coverage_percentage, stats.total_used, stats.total_declared
         );
     }
 
@@ -128,8 +125,7 @@ pub fn print_results(result: &AnalysisResult) {
     if let Some(symbol_stats) = &result.statistics.symbol_statistics {
         println!(
             "  Total symbols: {} ({} unused)",
-            symbol_stats.total_symbols,
-            symbol_stats.unused_symbols
+            symbol_stats.total_symbols, symbol_stats.unused_symbols
         );
     }
 
@@ -163,4 +159,3 @@ pub(crate) fn format_bytes(bytes: usize) -> String {
         format!("{} bytes", bytes)
     }
 }
-

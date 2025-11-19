@@ -8,22 +8,18 @@ use std::path::{Path, PathBuf};
 pub fn extract_entry_points(package_json: &Path) -> Result<Vec<PathBuf>> {
     // TOCTOU fix: Open file immediately instead of checking existence first
     use std::fs::File;
-    let _file = File::open(package_json)
-        .context("Failed to open package.json")?;
-    
-    let content = std::fs::read_to_string(package_json)
-        .context("Failed to read package.json")?;
+    let _file = File::open(package_json).context("Failed to open package.json")?;
 
-    let package: serde_json::Value = serde_json::from_str(&content)
-        .context("Failed to parse package.json")?;
+    let content = std::fs::read_to_string(package_json).context("Failed to read package.json")?;
 
-    let root = package_json
-        .parent()
-        .ok_or_else(|| Error::InvalidPath {
-            path: package_json.to_path_buf(),
-            reason: "package.json has no parent directory".to_string(),
-        })?;
-    
+    let package: serde_json::Value =
+        serde_json::from_str(&content).context("Failed to parse package.json")?;
+
+    let root = package_json.parent().ok_or_else(|| Error::InvalidPath {
+        path: package_json.to_path_buf(),
+        reason: "package.json has no parent directory".to_string(),
+    })?;
+
     let mut entry_points = Vec::new();
 
     // Check "main" field with validation
@@ -65,8 +61,7 @@ pub fn detect_framework(root: &Path) -> Result<Option<Framework>> {
         }
     }
 
-    let content = std::fs::read_to_string(&package_json)
-        .context("Failed to read package.json")?;
+    let content = std::fs::read_to_string(&package_json).context("Failed to read package.json")?;
 
     // Simple detection based on dependencies
     if content.contains("\"next\"") {
@@ -98,10 +93,10 @@ fn detect_framework_entry_points(root: &Path) -> Result<Vec<PathBuf>> {
             for expanded in &expanded_patterns {
                 // Convert pattern to absolute by joining with root
                 // For patterns starting with **, remove the leading ** and join
-                let pattern_for_glob = if expanded.starts_with("**/") {
-                    format!("{}/{}", root.display(), &expanded[3..])
-                } else if expanded.starts_with("**") {
-                    format!("{}/{}", root.display(), &expanded[2..])
+                let pattern_for_glob = if let Some(stripped) = expanded.strip_prefix("**/") {
+                    format!("{}/{}", root.display(), stripped)
+                } else if let Some(stripped) = expanded.strip_prefix("**") {
+                    format!("{}/{}", root.display(), stripped)
                 } else {
                     format!("{}/{}", root.display(), expanded)
                 };
@@ -116,7 +111,11 @@ fn detect_framework_entry_points(root: &Path) -> Result<Vec<PathBuf>> {
                                         match path.canonicalize() {
                                             Ok(canonical) => {
                                                 // Security: Validate path is within project root
-                                                if super::security::validate_path_within_root(&canonical, root).is_ok() {
+                                                if super::security::validate_path_within_root(
+                                                    &canonical, root,
+                                                )
+                                                .is_ok()
+                                                {
                                                     discovered.insert(canonical);
                                                 }
                                             }
@@ -181,10 +180,7 @@ mod tests {
 
     #[test]
     fn test_expand_braces_simple() {
-        assert_eq!(
-            expand_braces("file.{ts,js}"),
-            vec!["file.ts", "file.js"]
-        );
+        assert_eq!(expand_braces("file.{ts,js}"), vec!["file.ts", "file.js"]);
     }
 
     #[test]
@@ -227,4 +223,3 @@ mod tests {
         );
     }
 }
-

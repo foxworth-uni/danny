@@ -24,26 +24,29 @@
 //! reason = "React hook pattern"
 //! ```
 
-pub mod constants;
-pub mod toml_rule;
-pub mod matcher;
-pub mod loader;
-pub mod engine;
 pub mod bridge;
 pub mod built_in;
-pub mod entry_points;
+pub mod constants;
 pub mod detection;
+pub mod engine;
+pub mod entry_points;
+pub mod loader;
+pub mod matcher;
+pub mod toml_rule;
 
 // Re-export core types
-pub use constants::*;
-pub use toml_rule::{TomlRule, TomlRuleFile, RuleMatcher, RuleAction, ExportType, Severity, EntryPointPattern, FrameworkMetadata, DetectionRule, DetectionType};
-pub use matcher::CompiledMatcher;
-pub use loader::RuleLoader;
-pub use engine::RuleEngine;
 pub use bridge::TomlFrameworkRule;
-pub use built_in::{load_built_in_rules, load_built_in_entry_points};
+pub use built_in::{load_built_in_entry_points, load_built_in_rules};
+pub use constants::*;
+pub use detection::{DetectionEvidence, DetectionResult, FrameworkDetector};
+pub use engine::RuleEngine;
 pub use entry_points::extract_entry_points;
-pub use detection::{FrameworkDetector, DetectionResult, DetectionEvidence};
+pub use loader::RuleLoader;
+pub use matcher::CompiledMatcher;
+pub use toml_rule::{
+    DetectionRule, DetectionType, EntryPointPattern, ExportType, FrameworkMetadata, RuleAction,
+    RuleMatcher, Severity, TomlRule, TomlRuleFile,
+};
 
 /// Result type for rule operations
 pub type Result<T> = std::result::Result<T, RuleError>;

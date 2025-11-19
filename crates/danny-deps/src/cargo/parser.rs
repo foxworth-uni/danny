@@ -86,9 +86,7 @@ impl CargoDependencyManager {
 impl DependencyManager for CargoDependencyManager {
     async fn parse<F: FileSystem>(&self, fs: &Arc<F>, path: &Path) -> Result<DependencyFile> {
         let content = fs.read_to_string(path).await?;
-        let doc = content
-            .parse::<DocumentMut>()
-            .map_err(|e| Error::TomlEdit(e))?;
+        let doc = content.parse::<DocumentMut>().map_err(Error::TomlEdit)?;
 
         // Parse [package] section (optional for workspace-only manifests)
         let (name, version) = if let Some(package) = doc.get("package").and_then(|p| p.as_table()) {
@@ -96,10 +94,7 @@ impl DependencyManager for CargoDependencyManager {
                 .get("name")
                 .and_then(|n| n.as_str())
                 .ok_or_else(|| {
-                    Error::InvalidFormat(
-                        path.to_path_buf(),
-                        "Missing package.name".to_string(),
-                    )
+                    Error::InvalidFormat(path.to_path_buf(), "Missing package.name".to_string())
                 })?
                 .to_string();
 
@@ -174,9 +169,7 @@ impl DependencyManager for CargoDependencyManager {
         use crate::update::FileUpdater;
 
         let content = fs.read_to_string(path).await?;
-        let mut doc = content
-            .parse::<DocumentMut>()
-            .map_err(|e| Error::TomlEdit(e))?;
+        let mut doc = content.parse::<DocumentMut>().map_err(Error::TomlEdit)?;
         let mut applied = vec![];
 
         for update in updates {
@@ -191,13 +184,11 @@ impl DependencyManager for CargoDependencyManager {
                 if let Some(dep_item) = deps.get_mut(&update.package) {
                     let old_version = match dep_item {
                         Item::Value(Value::String(s)) => s.value().to_string(),
-                        Item::Value(Value::InlineTable(table)) => {
-                            table
-                                .get("version")
-                                .and_then(|v| v.as_str())
-                                .unwrap_or("*")
-                                .to_string()
-                        }
+                        Item::Value(Value::InlineTable(table)) => table
+                            .get("version")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("*")
+                            .to_string(),
                         _ => continue,
                     };
 
@@ -208,7 +199,9 @@ impl DependencyManager for CargoDependencyManager {
                         }
                         Item::Value(Value::InlineTable(table)) => {
                             if let Some(version) = table.get_mut("version") {
-                                *version = Value::String(toml_edit::Formatted::new(update.new_version.clone()));
+                                *version = Value::String(toml_edit::Formatted::new(
+                                    update.new_version.clone(),
+                                ));
                             }
                         }
                         _ => {}
@@ -265,10 +258,12 @@ impl Default for CargoDependencyManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use danny_fs::NativeFileSystem;
+    use std::sync::Arc;
     use tempfile::TempDir;
 
-    #[test]
-    fn test_parse_simple_dependency() {
+    #[tokio::test]
+    async fn test_parse_simple_dependency() {
         let temp_dir = TempDir::new().unwrap();
         let cargo_toml = temp_dir.path().join("Cargo.toml");
         std::fs::write(
@@ -285,7 +280,8 @@ serde = "1.0"
         .unwrap();
 
         let manager = CargoDependencyManager::new();
-        let manifest = manager.parse(&cargo_toml).unwrap();
+        let fs = Arc::new(NativeFileSystem::new(temp_dir.path()).unwrap());
+        let manifest = manager.parse(&fs, &cargo_toml).await.unwrap();
 
         assert_eq!(manifest.name, "test");
         assert_eq!(manifest.version, "0.1.0");
@@ -297,8 +293,8 @@ serde = "1.0"
         assert_eq!(deps[0].version_req.raw, "1.0");
     }
 
-    #[test]
-    fn test_parse_table_dependency() {
+    #[tokio::test]
+    async fn test_parse_table_dependency() {
         let temp_dir = TempDir::new().unwrap();
         let cargo_toml = temp_dir.path().join("Cargo.toml");
         std::fs::write(
@@ -315,14 +311,15 @@ serde = { version = "1.0", features = ["derive"] }
         .unwrap();
 
         let manager = CargoDependencyManager::new();
-        let manifest = manager.parse(&cargo_toml).unwrap();
+        let fs = Arc::new(NativeFileSystem::new(temp_dir.path()).unwrap());
+        let manifest = manager.parse(&fs, &cargo_toml).await.unwrap();
 
         let deps = manifest.dependencies_of_type(DependencyType::Runtime);
         assert_eq!(deps[0].features, vec!["derive"]);
     }
 
-    #[test]
-    fn test_parse_workspace_root() {
+    #[tokio::test]
+    async fn test_parse_workspace_root() {
         let temp_dir = TempDir::new().unwrap();
         let cargo_toml = temp_dir.path().join("Cargo.toml");
         std::fs::write(
@@ -335,9 +332,9 @@ members = ["crate1", "crate2"]
         .unwrap();
 
         let manager = CargoDependencyManager::new();
-        let manifest = manager.parse(&cargo_toml).unwrap();
+        let fs = Arc::new(NativeFileSystem::new(temp_dir.path()).unwrap());
+        let manifest = manager.parse(&fs, &cargo_toml).await.unwrap();
 
         assert!(manifest.is_workspace_root);
     }
 }
-

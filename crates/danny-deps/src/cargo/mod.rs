@@ -5,4 +5,3 @@ pub mod parser;
 pub mod workspace;
 
 pub use parser::CargoDependencyManager;
-

@@ -256,7 +256,7 @@ impl InfoClient {
     /// let client = InfoClient::new()?;
     /// let repo = RepositoryUrl::new("facebook", "react", "https://github.com/facebook/react");
     /// let parsed = client.fetch_parsed_changelog(&repo).await?;
-    /// 
+    ///
     /// for entry in parsed.entries {
     ///     println!("{} - {}", entry.version, entry.date.unwrap_or_default());
     /// }

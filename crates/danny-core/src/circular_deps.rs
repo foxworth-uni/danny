@@ -4,8 +4,8 @@
 //! Time complexity: O(V + E) where V = modules, E = imports
 //! Space complexity: O(V)
 
-use crate::types::CircularDependency;
 use crate::error::{Error, Result};
+use crate::types::CircularDependency;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -146,11 +146,7 @@ mod tests {
     #[test]
     fn test_simple_cycle() {
         // A → B → C → A
-        let graph = create_graph(vec![
-            ("A", vec!["B"]),
-            ("B", vec!["C"]),
-            ("C", vec!["A"]),
-        ]);
+        let graph = create_graph(vec![("A", vec!["B"]), ("B", vec!["C"]), ("C", vec!["A"])]);
 
         let mut detector = CircularDependencyDetector::new(graph);
         let cycles = detector.find_cycles().unwrap();
@@ -162,11 +158,7 @@ mod tests {
     #[test]
     fn test_no_cycles() {
         // A → B → C (linear)
-        let graph = create_graph(vec![
-            ("A", vec!["B"]),
-            ("B", vec!["C"]),
-            ("C", vec![]),
-        ]);
+        let graph = create_graph(vec![("A", vec!["B"]), ("B", vec!["C"]), ("C", vec![])]);
 
         let mut detector = CircularDependencyDetector::new(graph);
         let cycles = detector.find_cycles().unwrap();
@@ -204,4 +196,3 @@ mod tests {
         assert!(matches!(result.unwrap_err(), Error::GraphTooLarge { .. }));
     }
 }
-

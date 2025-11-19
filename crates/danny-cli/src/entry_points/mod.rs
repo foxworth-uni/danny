@@ -1,6 +1,6 @@
 mod detector;
-mod package;
 mod files;
+mod package;
 mod security;
 
 pub use detector::EntryPointDetector;

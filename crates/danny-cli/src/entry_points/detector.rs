@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use danny_config::{AnalysisTarget, PackageTarget, FilesTarget};
+use danny_config::{AnalysisTarget, FilesTarget, PackageTarget};
 use danny_core::Error;
 use std::path::{Path, PathBuf};
 
@@ -113,12 +113,10 @@ impl EntryPointDetector {
 
         // Find the package.json that contains this path
         if let Some(package_json) = super::files::find_nearest_package_json(path)? {
-            let root = package_json
-                .parent()
-                .ok_or_else(|| Error::InvalidPath {
-                    path: package_json.clone(),
-                    reason: "package.json has no parent directory".to_string(),
-                })?;
+            let root = package_json.parent().ok_or_else(|| Error::InvalidPath {
+                path: package_json.clone(),
+                reason: "package.json has no parent directory".to_string(),
+            })?;
             self.create_package_target(root, package_json.clone())
         } else {
             Err(Error::NoPackageJson {
@@ -137,4 +135,3 @@ impl EntryPointDetector {
         }
     }
 }
-

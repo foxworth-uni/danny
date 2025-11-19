@@ -19,10 +19,9 @@ pub fn print_json(result: &AnalysisResult) {
         "errors": result.errors,
         "ignored_findings": result.ignored_findings,
     });
-    
+
     match serde_json::to_string_pretty(&json_result) {
         Ok(json) => println!("{}", json),
         Err(e) => eprintln!("Error serializing results: {}", e),
     }
 }
-

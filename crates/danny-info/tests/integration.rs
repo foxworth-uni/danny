@@ -102,7 +102,11 @@ async fn test_full_workflow() {
 
     // 1. Fetch package from npm
     let react = client.fetch_npm("react").await.unwrap();
-    println!("React v{}: {}", react.version, react.description.as_ref().unwrap());
+    println!(
+        "React v{}: {}",
+        react.version,
+        react.description.as_ref().unwrap()
+    );
 
     // 2. Get repository info
     assert!(react.repository.is_some());
@@ -138,7 +142,8 @@ fn test_parse_repository_urls() {
     assert_eq!(repo.repo, "react");
 
     // git+https
-    let repo = InfoClient::parse_repository_url("git+https://github.com/facebook/react.git").unwrap();
+    let repo =
+        InfoClient::parse_repository_url("git+https://github.com/facebook/react.git").unwrap();
     assert_eq!(repo.owner, "facebook");
     assert_eq!(repo.repo, "react");
 

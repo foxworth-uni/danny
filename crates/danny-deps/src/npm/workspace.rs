@@ -25,8 +25,7 @@ impl NpmWorkspace {
             let pkg_json = current.join("package.json");
             if pkg_json.exists() {
                 let content = std::fs::read_to_string(&pkg_json)?;
-                let pkg: Value = serde_json::from_str(&content)
-                    .map_err(|e| crate::Error::Json(e))?;
+                let pkg: Value = serde_json::from_str(&content).map_err(crate::Error::Json)?;
 
                 if pkg.get("workspaces").is_some() {
                     return Ok(Some(current));
@@ -74,19 +73,18 @@ impl NpmWorkspace {
         }
 
         let content = fs.read_to_string(&root.join("pnpm-workspace.yaml")).await?;
-        let workspace: PnpmWorkspace = serde_yaml::from_str(&content)
-            .map_err(|e| crate::Error::Yaml(e))?;
+        let workspace: PnpmWorkspace =
+            serde_yaml::from_str(&content).map_err(crate::Error::Yaml)?;
 
         let mut members = vec![];
         for pattern in workspace.packages {
             let full_pattern = root.join(&pattern).join("package.json");
             if let Some(pattern_str) = full_pattern.to_str() {
-                for entry in glob(pattern_str).map_err(|e| {
-                    Error::WorkspaceError(format!("Invalid glob pattern: {}", e))
-                })? {
-                    if let Ok(path) = entry {
-                        members.push(path);
-                    }
+                for path in glob(pattern_str)
+                    .map_err(|e| Error::WorkspaceError(format!("Invalid glob pattern: {}", e)))?
+                    .flatten()
+                {
+                    members.push(path);
                 }
             }
         }
@@ -96,27 +94,24 @@ impl NpmWorkspace {
 
     async fn get_npm_members<F: FileSystem>(fs: &Arc<F>, root: &Path) -> Result<Vec<PathBuf>> {
         let content = fs.read_to_string(&root.join("package.json")).await?;
-        let pkg: Value = serde_json::from_str(&content)
-            .map_err(|e| crate::Error::Json(e))?;
+        let pkg: Value = serde_json::from_str(&content).map_err(crate::Error::Json)?;
 
         let patterns = match pkg.get("workspaces") {
-            Some(Value::Array(arr)) => {
-                arr.iter()
-                    .filter_map(|v| v.as_str())
-                    .map(String::from)
-                    .collect::<Vec<_>>()
-            }
-            Some(Value::Object(obj)) => {
-                obj.get("packages")
-                    .and_then(|v| v.as_array())
-                    .map(|arr| {
-                        arr.iter()
-                            .filter_map(|v| v.as_str())
-                            .map(String::from)
-                            .collect()
-                    })
-                    .unwrap_or_default()
-            }
+            Some(Value::Array(arr)) => arr
+                .iter()
+                .filter_map(|v| v.as_str())
+                .map(String::from)
+                .collect::<Vec<_>>(),
+            Some(Value::Object(obj)) => obj
+                .get("packages")
+                .and_then(|v| v.as_array())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_str())
+                        .map(String::from)
+                        .collect()
+                })
+                .unwrap_or_default(),
             _ => vec![],
         };
 
@@ -124,12 +119,11 @@ impl NpmWorkspace {
         for pattern in patterns {
             let full_pattern = root.join(&pattern).join("package.json");
             if let Some(pattern_str) = full_pattern.to_str() {
-                for entry in glob(pattern_str).map_err(|e| {
-                    Error::WorkspaceError(format!("Invalid glob pattern: {}", e))
-                })? {
-                    if let Ok(path) = entry {
-                        members.push(path);
-                    }
+                for path in glob(pattern_str)
+                    .map_err(|e| Error::WorkspaceError(format!("Invalid glob pattern: {}", e)))?
+                    .flatten()
+                {
+                    members.push(path);
                 }
             }
         }
@@ -167,4 +161,3 @@ mod tests {
         assert_eq!(root, Some(temp_dir.path().to_path_buf()));
     }
 }
-

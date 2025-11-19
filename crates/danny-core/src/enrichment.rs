@@ -3,10 +3,10 @@
 //! This module coordinates the enrichment of findings with additional metadata
 //! from side-effect analysis, bundle size calculation, etc.
 
-use crate::types::{BundleSizeImpact, ModuleSizeInfo};
 use crate::error::Result;
-use std::path::PathBuf;
+use crate::types::{BundleSizeImpact, ModuleSizeInfo};
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 /// Enriches findings with Phase 1 metadata
 pub struct FindingEnricher {
@@ -124,4 +124,3 @@ mod tests {
         assert_eq!(FindingEnricher::format_bytes(2_097_152), "2.00 MB");
     }
 }
-

@@ -1,12 +1,12 @@
 //! Analysis orchestration logic with category capabilities.
 
-use anyhow::{Context, Result};
-use danny_backend_js::JsBackend;
-use danny_core::{AnalysisOptions, BackendRegistry, Category};
-use crate::cli::category::{CategoryValidator, CategoryValidation};
+use crate::cli::category::{CategoryValidation, CategoryValidator};
 use crate::display::CapabilityDisplay;
 use crate::entry_points::EntryPointDetector;
 use crate::formatters;
+use anyhow::{Context, Result};
+use danny_backend_js::JsBackend;
+use danny_core::{AnalysisOptions, BackendRegistry, Category};
 use std::path::PathBuf;
 
 /// Output format for results.
@@ -36,8 +36,7 @@ pub struct AnalysisRunOptions {
 
 /// Runs the analysis with the given options.
 pub fn run_analysis(options: &AnalysisRunOptions) -> Result<()> {
-    let working_dir = std::env::current_dir()
-        .context("Failed to get current working directory")?;
+    let working_dir = std::env::current_dir().context("Failed to get current working directory")?;
 
     // Step 1: Detect analysis target (Package or Files mode)
     let detector = EntryPointDetector::new(working_dir);
@@ -54,24 +53,30 @@ pub fn run_analysis(options: &AnalysisRunOptions) -> Result<()> {
 
     // Step 3: Validate requested categories
     let validator = CategoryValidator::new(&target);
-    
+
     // Show capabilities in verbose mode
     if options.verbose > 0 {
         let caps = validator.capabilities();
-        println!("Analysis capabilities: {} available, {} unavailable",
-                 caps.available_categories().len(),
-                 caps.unavailable_categories().len());
+        println!(
+            "Analysis capabilities: {} available, {} unavailable",
+            caps.available_categories().len(),
+            caps.unavailable_categories().len()
+        );
     }
-    
+
     let validation = validator.validate(&options.categories);
 
     // Step 4: Display warnings and get confirmation if needed
     let display = CapabilityDisplay::new(target.clone(), options.yes);
-    
+
     // Use the convenience method to check if confirmation is needed
     if validation.requires_confirmation() && !options.yes {
         // Show warning for partial availability
-        if let CategoryValidation::PartiallyAvailable { available, unavailable } = &validation {
+        if let CategoryValidation::PartiallyAvailable {
+            available,
+            unavailable,
+        } = &validation
+        {
             display.show_partial_warning(available, unavailable);
             if !display.confirm_continue()? {
                 eprintln!("Cancelled");
@@ -79,7 +84,7 @@ pub fn run_analysis(options: &AnalysisRunOptions) -> Result<()> {
             }
         }
     }
-    
+
     // Use the convenience method to extract categories
     let categories = match validation {
         CategoryValidation::UseDefaults { categories } => {
@@ -96,7 +101,10 @@ pub fn run_analysis(options: &AnalysisRunOptions) -> Result<()> {
             available
         }
 
-        CategoryValidation::NoneAvailable { requested, unavailable } => {
+        CategoryValidation::NoneAvailable {
+            requested,
+            unavailable,
+        } => {
             display.show_none_available(&requested, &unavailable);
             std::process::exit(1);
         }
@@ -173,19 +181,13 @@ pub fn run_analysis(options: &AnalysisRunOptions) -> Result<()> {
 
     // Step 9: Build analysis options
     let mut backend_options = std::collections::HashMap::new();
-    
+
     // Enable analysis based on requested categories
     if categories.contains(&Category::Symbols) {
-        backend_options.insert(
-            "symbols".to_string(),
-            serde_json::Value::Bool(true),
-        );
+        backend_options.insert("symbols".to_string(), serde_json::Value::Bool(true));
     }
     if categories.contains(&Category::Quality) {
-        backend_options.insert(
-            "quality".to_string(),
-            serde_json::Value::Bool(true),
-        );
+        backend_options.insert("quality".to_string(), serde_json::Value::Bool(true));
     }
     if categories.contains(&Category::Dependencies) {
         backend_options.insert(
@@ -211,7 +213,9 @@ pub fn run_analysis(options: &AnalysisRunOptions) -> Result<()> {
     };
 
     // Step 10: Validate before analysis
-    backend.validate(&analysis_options).context("Validation failed")?;
+    backend
+        .validate(&analysis_options)
+        .context("Validation failed")?;
 
     // Step 11: Determine output format
     let output_format = if options.json {
@@ -223,7 +227,10 @@ pub fn run_analysis(options: &AnalysisRunOptions) -> Result<()> {
     // Step 12: Perform analysis
     match output_format {
         OutputFormat::Json => {
-            eprintln!("Analyzing {} entry points...", analysis_options.entry_points.len());
+            eprintln!(
+                "Analyzing {} entry points...",
+                analysis_options.entry_points.len()
+            );
         }
         OutputFormat::Human => {
             if options.verbose > 0 {
@@ -234,16 +241,17 @@ pub fn run_analysis(options: &AnalysisRunOptions) -> Result<()> {
         }
     }
 
-    let mut result = backend.analyze(analysis_options).context("Analysis failed")?;
+    let mut result = backend
+        .analyze(analysis_options)
+        .context("Analysis failed")?;
 
     // Step 13: Filter findings based on ignore patterns
     if !options.no_ignore {
-        let filter_result =
-            crate::cli::filtering::filter_findings_with_tracking(
-                result.findings,
-                &ignore_set,
-                &pattern_infos,
-            );
+        let filter_result = crate::cli::filtering::filter_findings_with_tracking(
+            result.findings,
+            &ignore_set,
+            &pattern_infos,
+        );
 
         result.findings = filter_result.kept;
         result.ignored_findings = filter_result.ignored;
@@ -257,9 +265,9 @@ pub fn run_analysis(options: &AnalysisRunOptions) -> Result<()> {
     }
 
     // Step 14: Filter findings by requested categories
-    result.findings.retain(|finding| {
-        categories.contains(&finding.category())
-    });
+    result
+        .findings
+        .retain(|finding| categories.contains(&finding.category()));
 
     // Step 15: Output results
     use formatters::Formatter;

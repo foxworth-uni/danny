@@ -10,12 +10,12 @@ pub fn validate_path(path: &Path, project_root: &Path) -> Result<()> {
         reason: format!("Cannot canonicalize: {}", e),
     })?;
 
-    let canonical_root = project_root.canonicalize().map_err(|e| {
-        Error::InvalidPath {
+    let canonical_root = project_root
+        .canonicalize()
+        .map_err(|e| Error::InvalidPath {
             path: project_root.to_path_buf(),
             reason: format!("Cannot canonicalize project root: {}", e),
-        }
-    })?;
+        })?;
 
     if !canonical_path.starts_with(&canonical_root) {
         return Err(Error::PathTraversal {
@@ -61,4 +61,3 @@ mod tests {
         assert!(matches!(result.unwrap_err(), Error::PathTraversal { .. }));
     }
 }
-

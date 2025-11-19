@@ -15,7 +15,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let react = client.fetch_npm("react").await?;
     println!("   Name: {}", react.name);
     println!("   Version: {}", react.version);
-    println!("   Description: {}", react.description.as_deref().unwrap_or("N/A"));
+    println!(
+        "   Description: {}",
+        react.description.as_deref().unwrap_or("N/A")
+    );
     println!("   License: {}", react.license.as_deref().unwrap_or("N/A"));
 
     // 2. Get repository and fetch releases
@@ -29,8 +32,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("   Latest 5 releases:");
                 for (i, release) in releases.iter().take(5).enumerate() {
                     let name = release.name.as_deref().unwrap_or("Unnamed");
-                    let prerelease = if release.prerelease { " (prerelease)" } else { "" };
-                    println!("   {}. {} - {}{}", i + 1, release.tag_name, name, prerelease);
+                    let prerelease = if release.prerelease {
+                        " (prerelease)"
+                    } else {
+                        ""
+                    };
+                    println!(
+                        "   {}. {} - {}{}",
+                        i + 1,
+                        release.tag_name,
+                        name,
+                        prerelease
+                    );
                 }
             }
             Err(e) => println!("   Error fetching releases: {}", e),
@@ -41,7 +54,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         match client.fetch_changelog(repo).await {
             Ok(changelog) => {
                 let lines: Vec<&str> = changelog.lines().collect();
-                println!("   Changelog found: {} lines, {} bytes", lines.len(), changelog.len());
+                println!(
+                    "   Changelog found: {} lines, {} bytes",
+                    lines.len(),
+                    changelog.len()
+                );
                 println!("   First 10 lines:");
                 for line in lines.iter().take(10) {
                     println!("   {}", line);
@@ -56,7 +73,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let serde = client.fetch_crates_io("serde").await?;
     println!("   Name: {}", serde.name);
     println!("   Version: {}", serde.version);
-    println!("   Description: {}", serde.description.as_deref().unwrap_or("N/A"));
+    println!(
+        "   Description: {}",
+        serde.description.as_deref().unwrap_or("N/A")
+    );
     if let Some(repo) = &serde.repository {
         println!("   Repository: {}", repo.url);
     }
@@ -67,7 +87,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(std_path) => {
             println!("   Name: {}", std_path.name);
             println!("   Version: {}", std_path.version);
-            println!("   Description: {}", std_path.description.as_deref().unwrap_or("N/A"));
+            println!(
+                "   Description: {}",
+                std_path.description.as_deref().unwrap_or("N/A")
+            );
             if let Some(repo) = &std_path.repository {
                 println!("   Repository: {}", repo.url);
             }

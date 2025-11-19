@@ -4,8 +4,8 @@
 //! frameworks like React, Next.js, Vue, and Svelte. These rules are embedded
 //! at compile time via `include_str!()` for zero-config defaults.
 
+use crate::{EntryPointPattern, Result, TomlFrameworkRule};
 use fob::graph::FrameworkRule;
-use crate::{TomlFrameworkRule, Result, EntryPointPattern};
 
 /// React framework rules (hooks, components)
 pub const REACT_RULES: &str = include_str!("built_in/react.toml");
@@ -63,12 +63,7 @@ pub fn load_built_in_rules() -> Result<Vec<Box<dyn FrameworkRule>>> {
 /// // Use entry_points to discover files using glob patterns
 /// ```
 pub fn load_built_in_entry_points() -> Result<Vec<EntryPointPattern>> {
-    let frameworks = [
-        REACT_RULES,
-        NEXTJS_RULES,
-        VUE_RULES,
-        SVELTE_RULES,
-    ];
+    let frameworks = [REACT_RULES, NEXTJS_RULES, VUE_RULES, SVELTE_RULES];
 
     let mut all_entry_points = Vec::new();
 

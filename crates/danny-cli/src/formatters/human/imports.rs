@@ -10,7 +10,7 @@ pub fn print_imports(findings: &[&Finding]) {
     let mut namespace_imports = Vec::new();
     let mut type_only_imports = Vec::new();
     let mut dependency_chains = Vec::new();
-    
+
     for finding in findings {
         match finding {
             DynamicImport(_) => dynamic_imports.push(*finding),
@@ -21,7 +21,7 @@ pub fn print_imports(findings: &[&Finding]) {
             _ => {}
         }
     }
-    
+
     if !dynamic_imports.is_empty() {
         println!("  Dynamic Imports (Code-Split Points):");
         for finding in dynamic_imports.iter().take(20) {
@@ -43,7 +43,7 @@ pub fn print_imports(findings: &[&Finding]) {
             println!("    ... and {} more", dynamic_imports.len() - 20);
         }
     }
-    
+
     if !side_effect_imports.is_empty() {
         println!("\n  Side-Effect-Only Imports (Cannot be tree-shaken):");
         for finding in side_effect_imports.iter().take(20) {
@@ -55,7 +55,7 @@ pub fn print_imports(findings: &[&Finding]) {
             println!("    ... and {} more", side_effect_imports.len() - 20);
         }
     }
-    
+
     if !namespace_imports.is_empty() {
         println!("\n  Namespace Imports (import * as X):");
         for finding in namespace_imports.iter().take(20) {
@@ -78,7 +78,7 @@ pub fn print_imports(findings: &[&Finding]) {
             println!("    ... and {} more", namespace_imports.len() - 20);
         }
     }
-    
+
     if !type_only_imports.is_empty() {
         println!("\n  Type-Only Imports (TypeScript import type):");
         for finding in type_only_imports.iter().take(20) {
@@ -95,9 +95,8 @@ pub fn print_imports(findings: &[&Finding]) {
                     format!(" {{ {} }}", specifiers.join(", "))
                 };
                 println!(
-                    "    📝 import type{}{} from '{}' in {}",
+                    "    📝 import type{} from '{}' in {}",
                     specifiers_str,
-                    if specifiers.is_empty() { "" } else { "" },
                     source,
                     module.display()
                 );
@@ -107,14 +106,19 @@ pub fn print_imports(findings: &[&Finding]) {
             println!("    ... and {} more", type_only_imports.len() - 20);
         }
     }
-    
+
     if !dependency_chains.is_empty() {
         println!("\n  Dependency Chains (Import Path Analysis):");
         for finding in dependency_chains.iter().take(10) {
             if let DependencyChain { chain, depth } = finding {
                 let chain_str = chain
                     .iter()
-                    .map(|p| p.file_name().unwrap_or_default().to_string_lossy().to_string())
+                    .map(|p| {
+                        p.file_name()
+                            .unwrap_or_default()
+                            .to_string_lossy()
+                            .to_string()
+                    })
                     .collect::<Vec<_>>()
                     .join(" → ");
                 println!("    🔗 {} (depth: {})", chain_str, depth);
@@ -125,4 +129,3 @@ pub fn print_imports(findings: &[&Finding]) {
         }
     }
 }
-

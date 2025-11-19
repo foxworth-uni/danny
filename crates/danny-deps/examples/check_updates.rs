@@ -51,7 +51,9 @@ async fn main() -> anyhow::Result<()> {
                 // Show updates that don't satisfy requirement
                 let unsatisfied: Vec<_> = updates
                     .iter()
-                    .filter(|u| !u.satisfies_requirement && u.update_type != danny_deps::UpdateType::None)
+                    .filter(|u| {
+                        !u.satisfies_requirement && u.update_type != danny_deps::UpdateType::None
+                    })
                     .collect();
                 if !unsatisfied.is_empty() {
                     println!("📦 Updates Requiring Requirement Change:");
@@ -74,7 +76,10 @@ async fn main() -> anyhow::Result<()> {
     let package_json = Path::new("package.json");
     if package_json.exists() {
         println!("Checking JavaScript dependencies in package.json...\n");
-        match manager.check_updates(package_json, Ecosystem::JavaScript).await {
+        match manager
+            .check_updates(package_json, Ecosystem::JavaScript)
+            .await
+        {
             Ok(updates) => {
                 println!("Found {} potential updates\n", updates.len());
 
@@ -112,4 +117,3 @@ async fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
-

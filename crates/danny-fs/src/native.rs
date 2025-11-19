@@ -1,9 +1,9 @@
 //! Native filesystem implementation using std::fs + tokio.
 
-use crate::{FileSystem, FileMetadata, DiscoveryOptions};
-use std::path::{Path, PathBuf};
+use crate::{DiscoveryOptions, FileMetadata, FileSystem};
 use std::collections::HashSet;
 use std::io;
+use std::path::{Path, PathBuf};
 use tokio::task;
 
 #[cfg(feature = "native")]
@@ -26,30 +26,30 @@ impl NativeFileSystem {
     ///
     /// Returns an error if the root doesn't exist or can't be canonicalized.
     pub fn new(project_root: impl AsRef<Path>) -> io::Result<Self> {
-        let project_root = project_root.as_ref()
-            .canonicalize()
-            .or_else(|_| {
-                // If canonicalize fails (e.g., path doesn't exist yet),
-                // try to canonicalize the parent and join the last component
-                if let Some(parent) = project_root.as_ref().parent() {
-                    let name = project_root.as_ref().file_name()
-                        .ok_or_else(|| io::Error::new(
-                            io::ErrorKind::InvalidInput,
-                            "Invalid project root path"
-                        ))?;
-                    Ok(parent.canonicalize()?.join(name))
-                } else {
-                    Err(io::Error::new(
-                        io::ErrorKind::NotFound,
-                        format!("Project root does not exist: {}", project_root.as_ref().display())
-                    ))
-                }
-            })?;
+        let project_root = project_root.as_ref().canonicalize().or_else(|_| {
+            // If canonicalize fails (e.g., path doesn't exist yet),
+            // try to canonicalize the parent and join the last component
+            if let Some(parent) = project_root.as_ref().parent() {
+                let name = project_root.as_ref().file_name().ok_or_else(|| {
+                    io::Error::new(io::ErrorKind::InvalidInput, "Invalid project root path")
+                })?;
+                Ok(parent.canonicalize()?.join(name))
+            } else {
+                Err(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    format!(
+                        "Project root does not exist: {}",
+                        project_root.as_ref().display()
+                    ),
+                ))
+            }
+        })?;
 
-        let canonical_root = project_root.canonicalize()
+        let canonical_root = project_root
+            .canonicalize()
             .unwrap_or_else(|_| project_root.clone());
 
-        Ok(Self { 
+        Ok(Self {
             project_root: project_root.clone(),
             canonical_root,
         })
@@ -115,7 +115,7 @@ impl NativeFileSystem {
                     "Path traversal detected: {} is outside project root {}",
                     canonical_path.display(),
                     self.project_root.display()
-                )
+                ),
             ));
         }
 
@@ -166,48 +166,44 @@ impl FileSystem for NativeFileSystem {
         let validated = self.validate_path(path)?;
         task::spawn_blocking(move || Ok(validated.exists()))
             .await
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+            .map_err(io::Error::other)?
     }
 
     async fn read_to_string(&self, path: &Path) -> io::Result<String> {
         let validated = self.validate_path(path)?;
         task::spawn_blocking(move || std::fs::read_to_string(&validated))
             .await
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+            .map_err(io::Error::other)?
     }
 
     async fn read(&self, path: &Path) -> io::Result<Vec<u8>> {
         let validated = self.validate_path(path)?;
         task::spawn_blocking(move || std::fs::read(&validated))
             .await
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+            .map_err(io::Error::other)?
     }
 
     async fn metadata(&self, path: &Path) -> io::Result<FileMetadata> {
         let validated = self.validate_path(path)?;
-        task::spawn_blocking(move || {
-            match std::fs::symlink_metadata(&validated) {
-                Ok(meta) => Ok(FileMetadata {
-                    exists: true,
-                    is_file: meta.is_file(),
-                    is_dir: meta.is_dir(),
-                    is_symlink: meta.file_type().is_symlink(),
-                    size: meta.len(),
-                }),
-                Err(e) if e.kind() == io::ErrorKind::NotFound => {
-                    Ok(FileMetadata {
-                        exists: false,
-                        is_file: false,
-                        is_dir: false,
-                        is_symlink: false,
-                        size: 0,
-                    })
-                }
-                Err(e) => Err(e),
-            }
+        task::spawn_blocking(move || match std::fs::symlink_metadata(&validated) {
+            Ok(meta) => Ok(FileMetadata {
+                exists: true,
+                is_file: meta.is_file(),
+                is_dir: meta.is_dir(),
+                is_symlink: meta.file_type().is_symlink(),
+                size: meta.len(),
+            }),
+            Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(FileMetadata {
+                exists: false,
+                is_file: false,
+                is_dir: false,
+                is_symlink: false,
+                size: 0,
+            }),
+            Err(e) => Err(e),
         })
         .await
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+        .map_err(io::Error::other)?
     }
 
     async fn write(&self, path: &Path, contents: &str) -> io::Result<()> {
@@ -215,7 +211,7 @@ impl FileSystem for NativeFileSystem {
         let contents = contents.to_string();
         task::spawn_blocking(move || std::fs::write(&validated, contents))
             .await
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+            .map_err(io::Error::other)?
     }
 
     async fn write_bytes(&self, path: &Path, contents: &[u8]) -> io::Result<()> {
@@ -223,7 +219,7 @@ impl FileSystem for NativeFileSystem {
         let contents = contents.to_vec();
         task::spawn_blocking(move || std::fs::write(&validated, contents))
             .await
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+            .map_err(io::Error::other)?
     }
 
     async fn remove_file(&self, path: &Path) -> io::Result<()> {
@@ -234,13 +230,13 @@ impl FileSystem for NativeFileSystem {
         if meta.is_symlink {
             return Err(io::Error::new(
                 io::ErrorKind::PermissionDenied,
-                "Refusing to remove symlink (use explicit symlink removal method)"
+                "Refusing to remove symlink (use explicit symlink removal method)",
             ));
         }
 
         task::spawn_blocking(move || std::fs::remove_file(&validated))
             .await
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+            .map_err(io::Error::other)?
     }
 
     async fn rename(&self, from: &Path, to: &Path) -> io::Result<()> {
@@ -248,21 +244,21 @@ impl FileSystem for NativeFileSystem {
         let to_validated = self.validate_path(to)?;
         task::spawn_blocking(move || std::fs::rename(&from_validated, &to_validated))
             .await
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+            .map_err(io::Error::other)?
     }
 
     async fn create_dir(&self, path: &Path) -> io::Result<()> {
         let validated = self.validate_path(path)?;
         task::spawn_blocking(move || std::fs::create_dir(&validated))
             .await
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+            .map_err(io::Error::other)?
     }
 
     async fn create_dir_all(&self, path: &Path) -> io::Result<()> {
         let validated = self.validate_path(path)?;
         task::spawn_blocking(move || std::fs::create_dir_all(&validated))
             .await
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+            .map_err(io::Error::other)?
     }
 
     async fn discover_files(
@@ -279,10 +275,16 @@ impl FileSystem for NativeFileSystem {
         let canonical_root = self.canonical_root.clone();
 
         task::spawn_blocking(move || {
-            discover_files_sync(&validated_root, &extensions, &ignore_patterns, &opts, &canonical_root)
+            discover_files_sync(
+                &validated_root,
+                &extensions,
+                &ignore_patterns,
+                &opts,
+                &canonical_root,
+            )
         })
         .await
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+        .map_err(io::Error::other)?
     }
 
     async fn normalize_path(&self, path: &Path) -> io::Result<PathBuf> {
@@ -292,7 +294,9 @@ impl FileSystem for NativeFileSystem {
             let normalized = if path_buf.is_absolute() {
                 path_buf.canonicalize().unwrap_or(path_buf)
             } else {
-                canonical_root.join(&path_buf).canonicalize()
+                canonical_root
+                    .join(&path_buf)
+                    .canonicalize()
                     .unwrap_or_else(|_| canonical_root.join(&path_buf))
             };
 
@@ -300,14 +304,14 @@ impl FileSystem for NativeFileSystem {
             if !normalized.starts_with(&canonical_root) {
                 return Err(io::Error::new(
                     io::ErrorKind::PermissionDenied,
-                    "Path outside project root"
+                    "Path outside project root",
                 ));
             }
 
             Ok(normalized)
         })
         .await
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+        .map_err(io::Error::other)?
     }
 
     fn project_root(&self) -> &Path {
@@ -349,7 +353,7 @@ fn discover_files_sync(
     }
 
     for result in walker.build() {
-        let entry = result.map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+        let entry = result.map_err(io::Error::other)?;
 
         if !entry.file_type().map(|ft| ft.is_file()).unwrap_or(false) {
             continue;
@@ -373,4 +377,3 @@ fn discover_files_sync(
 
     Ok(discovered)
 }
-

@@ -10,23 +10,22 @@
 //! - `npm_dependencies`: NPM dependency analysis
 //! - `dependency_chains`: Dependency chain analysis
 
-pub mod side_effects;
 pub mod bundle_size;
-pub mod type_only;
-pub mod dynamic_imports;
 pub mod class_members;
+pub mod dependency_chains;
+pub mod dynamic_imports;
 pub mod enum_members;
 pub mod npm_dependencies;
-pub mod dependency_chains;
 pub mod quality;
+pub mod side_effects;
+pub mod type_only;
 
-pub use side_effects::SideEffectAnalyzer;
 pub use bundle_size::BundleSizeAnalyzer;
-pub use type_only::{TypeOnlyAnalyzer, CategorizedExports, UnusedExport};
-pub use dynamic_imports::DynamicImportAnalyzer;
 pub use class_members::ClassMemberAnalyzer;
+pub use dependency_chains::DependencyChainAnalyzer;
+pub use dynamic_imports::DynamicImportAnalyzer;
 pub use enum_members::EnumMemberAnalyzer;
 pub use npm_dependencies::NpmDependencyAnalyzer;
-pub use dependency_chains::DependencyChainAnalyzer;
 pub use quality::QualityAnalyzer;
-
+pub use side_effects::SideEffectAnalyzer;
+pub use type_only::{CategorizedExports, TypeOnlyAnalyzer, UnusedExport};

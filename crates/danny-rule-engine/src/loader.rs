@@ -7,7 +7,7 @@ use crate::constants::{
     REGEX_SIZE_LIMIT,
 };
 use crate::{Result, RuleError, TomlRule, TomlRuleFile};
-use danny_fs::{FileSystem, DiscoveryOptions as FsDiscoveryOptions};
+use danny_fs::{DiscoveryOptions as FsDiscoveryOptions, FileSystem};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -55,10 +55,14 @@ impl<F: FileSystem> RuleLoader<F> {
         if let Some(ref path) = self.builtin_path {
             match self.fs.normalize_path(path).await {
                 Ok(normalized) => {
-                    if normalized.starts_with(project_root) {
-                        if self.fs.exists(&normalized).await.map_err(RuleError::IoError)? {
-                            all_rules.extend(self.load_from_directory(&normalized).await?);
-                        }
+                    if normalized.starts_with(project_root)
+                        && self
+                            .fs
+                            .exists(&normalized)
+                            .await
+                            .map_err(RuleError::IoError)?
+                    {
+                        all_rules.extend(self.load_from_directory(&normalized).await?);
                     }
                 }
                 Err(_) => {
@@ -72,10 +76,14 @@ impl<F: FileSystem> RuleLoader<F> {
         if let Some(ref path) = self.user_path {
             match self.fs.normalize_path(path).await {
                 Ok(normalized) => {
-                    if normalized.starts_with(project_root) {
-                        if self.fs.exists(&normalized).await.map_err(RuleError::IoError)? {
-                            all_rules.extend(self.load_from_directory(&normalized).await?);
-                        }
+                    if normalized.starts_with(project_root)
+                        && self
+                            .fs
+                            .exists(&normalized)
+                            .await
+                            .map_err(RuleError::IoError)?
+                    {
+                        all_rules.extend(self.load_from_directory(&normalized).await?);
                     }
                 }
                 Err(_) => {
@@ -108,11 +116,14 @@ impl<F: FileSystem> RuleLoader<F> {
         let mut rules = Vec::new();
 
         // Normalize the directory path for security checks
-        let normalized_dir = self.fs.normalize_path(dir).await
-            .map_err(|e| RuleError::LoadError {
-                path: dir.display().to_string(),
-                source: Box::new(e),
-            })?;
+        let normalized_dir =
+            self.fs
+                .normalize_path(dir)
+                .await
+                .map_err(|e| RuleError::LoadError {
+                    path: dir.display().to_string(),
+                    source: Box::new(e),
+                })?;
 
         // Discover .toml files in the directory
         let discovery_options = FsDiscoveryOptions {
@@ -124,32 +135,37 @@ impl<F: FileSystem> RuleLoader<F> {
         };
 
         // Use "toml" extension (without dot) for discovery
-        let discovered_files = self.fs.discover_files(
-            &normalized_dir,
-            &["toml"],
-            &[],
-            &discovery_options,
-        ).await.map_err(|e| RuleError::LoadError {
-            path: normalized_dir.display().to_string(),
-            source: Box::new(e),
-        })?;
+        let discovered_files = self
+            .fs
+            .discover_files(&normalized_dir, &["toml"], &[], &discovery_options)
+            .await
+            .map_err(|e| RuleError::LoadError {
+                path: normalized_dir.display().to_string(),
+                source: Box::new(e),
+            })?;
 
         // Load each discovered TOML file
         for path in discovered_files {
             // Security: Verify path is within the expected directory
             // (FileSystem already validates this, but double-check for safety)
-            let normalized_path = self.fs.normalize_path(&path).await
-                .map_err(|e| RuleError::LoadError {
-                    path: path.display().to_string(),
-                    source: Box::new(e),
-                })?;
+            let normalized_path =
+                self.fs
+                    .normalize_path(&path)
+                    .await
+                    .map_err(|e| RuleError::LoadError {
+                        path: path.display().to_string(),
+                        source: Box::new(e),
+                    })?;
 
             if !normalized_path.starts_with(&normalized_dir) {
                 continue; // Skip paths outside the expected directory
             }
 
             // Security: Check file size before reading
-            let metadata = self.fs.metadata(&path).await
+            let metadata = self
+                .fs
+                .metadata(&path)
+                .await
                 .map_err(|e| RuleError::LoadError {
                     path: path.display().to_string(),
                     source: Box::new(e),
@@ -160,7 +176,10 @@ impl<F: FileSystem> RuleLoader<F> {
                     path: path.display().to_string(),
                     source: Box::new(std::io::Error::new(
                         std::io::ErrorKind::InvalidData,
-                        format!("File exceeds maximum size of {}MB", MAX_TOML_FILE_SIZE / 1_048_576)
+                        format!(
+                            "File exceeds maximum size of {}MB",
+                            MAX_TOML_FILE_SIZE / 1_048_576
+                        ),
                     )),
                 });
             }
@@ -175,10 +194,14 @@ impl<F: FileSystem> RuleLoader<F> {
 
     /// Load rules from a single TOML file
     async fn load_from_file(&self, path: &Path) -> Result<Vec<TomlRule>> {
-        let contents = self.fs.read_to_string(path).await.map_err(|e| RuleError::LoadError {
-            path: path.display().to_string(),
-            source: Box::new(e),
-        })?;
+        let contents = self
+            .fs
+            .read_to_string(path)
+            .await
+            .map_err(|e| RuleError::LoadError {
+                path: path.display().to_string(),
+                source: Box::new(e),
+            })?;
 
         let file: TomlRuleFile = toml::from_str(&contents).map_err(|e| RuleError::LoadError {
             path: path.display().to_string(),
@@ -295,7 +318,7 @@ fn validate_regex_pattern(pattern: &str, path: &Path) -> Result<()> {
                 format!(
                     "Regex pattern exceeds {} characters: {}",
                     MAX_REGEX_LENGTH, pattern
-                )
+                ),
             )),
         });
     }
@@ -316,9 +339,9 @@ fn validate_regex_pattern(pattern: &str, path: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::TempDir;
     use danny_fs::NativeFileSystem;
     use std::sync::Arc;
+    use tempfile::TempDir;
 
     #[tokio::test]
     async fn test_load_from_file() {

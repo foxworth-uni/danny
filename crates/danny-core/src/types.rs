@@ -106,10 +106,7 @@ impl Category {
 
     /// Parse from CLI string
     pub fn from_cli_name(s: &str) -> Option<Self> {
-        Self::all()
-            .iter()
-            .find(|cat| cat.cli_name() == s)
-            .copied()
+        Self::all().iter().find(|cat| cat.cli_name() == s).copied()
     }
 }
 
@@ -221,7 +218,8 @@ impl AnalysisCapabilities {
         self.available.remove(&category);
         // Only add if not already present
         if !self.unavailable.iter().any(|uc| uc.category == category) {
-            self.unavailable.push(UnavailableCategory { category, reason });
+            self.unavailable
+                .push(UnavailableCategory { category, reason });
         }
     }
 
@@ -250,13 +248,9 @@ impl AnalysisCapabilities {
         &'a self,
         requested: &'a [Category],
     ) -> impl Iterator<Item = Category> + 'a {
-        requested.iter().filter_map(move |c| {
-            if self.supports(*c) {
-                Some(*c)
-            } else {
-                None
-            }
-        })
+        requested
+            .iter()
+            .filter_map(move |c| if self.supports(*c) { Some(*c) } else { None })
     }
 
     /// Get unavailable categories from a request (returns iterator)
@@ -264,13 +258,9 @@ impl AnalysisCapabilities {
         &'a self,
         requested: &'a [Category],
     ) -> impl Iterator<Item = Category> + 'a {
-        requested.iter().filter_map(move |c| {
-            if !self.supports(*c) {
-                Some(*c)
-            } else {
-                None
-            }
-        })
+        requested
+            .iter()
+            .filter_map(move |c| if !self.supports(*c) { Some(*c) } else { None })
     }
 }
 
@@ -581,9 +571,14 @@ impl Finding {
                 Category::Files
             }
             // Exports category: unused exports (runtime)
-            UnusedExport { is_type_only: false, .. } => Category::Exports,
+            UnusedExport {
+                is_type_only: false,
+                ..
+            } => Category::Exports,
             // Types category: unused TypeScript types/interfaces
-            UnusedExport { is_type_only: true, .. } => Category::Types,
+            UnusedExport {
+                is_type_only: true, ..
+            } => Category::Types,
             // Symbols category: dead code within files
             UnusedSymbol { .. }
             | UnusedPrivateClassMember { .. }
@@ -604,10 +599,9 @@ impl Finding {
             // Framework category: framework-detected exports
             FrameworkExport { .. } => Category::Framework,
             // These are informational/internal and don't map to user categories
-            Module { .. }
-            | Dependency { .. }
-            | Pattern { .. }
-            | Framework { .. } => Category::Framework, // Default to framework for now
+            Module { .. } | Dependency { .. } | Pattern { .. } | Framework { .. } => {
+                Category::Framework
+            } // Default to framework for now
         }
     }
 }
@@ -1307,7 +1301,9 @@ mod tests {
             has_side_effects: true,
             size_bytes: 1024,
             safe_to_delete: false,
-            safety_assessment: SafetyAssessment::ReviewCarefully("Module has side effects".to_string()),
+            safety_assessment: SafetyAssessment::ReviewCarefully(
+                "Module has side effects".to_string(),
+            ),
         };
 
         let json = serde_json::to_string(&metadata).unwrap();
@@ -1321,13 +1317,11 @@ mod tests {
         let impact = BundleSizeImpact {
             total_savings_bytes: 5000,
             safe_savings_bytes: 3000,
-            by_module: vec![
-                ModuleSizeInfo {
-                    path: PathBuf::from("a.ts"),
-                    size_bytes: 2000,
-                    has_side_effects: true,
-                },
-            ],
+            by_module: vec![ModuleSizeInfo {
+                path: PathBuf::from("a.ts"),
+                size_bytes: 2000,
+                has_side_effects: true,
+            }],
         };
 
         let json = serde_json::to_string(&impact).unwrap();
@@ -1382,26 +1376,27 @@ mod tests {
             findings: vec![],
             statistics: Statistics::default(),
             errors: vec![],
-            ignored_findings: vec![
-                IgnoredFinding {
-                    finding: Finding::UnusedExport {
-                        module: PathBuf::from("ignored.js"),
-                        export_name: "unused".to_string(),
-                        kind: ExportKind::Named,
-                        span: None,
-                        is_type_only: false,
-                        explanation: None,
-                    },
-                    matched_pattern: "**/node_modules/**".to_string(),
-                    matched_path: PathBuf::from("node_modules/pkg/ignored.js"),
+            ignored_findings: vec![IgnoredFinding {
+                finding: Finding::UnusedExport {
+                    module: PathBuf::from("ignored.js"),
+                    export_name: "unused".to_string(),
+                    kind: ExportKind::Named,
+                    span: None,
+                    is_type_only: false,
+                    explanation: None,
                 },
-            ],
+                matched_pattern: "**/node_modules/**".to_string(),
+                matched_path: PathBuf::from("node_modules/pkg/ignored.js"),
+            }],
         };
 
         let json = serde_json::to_string(&result).unwrap();
         let deserialized: AnalysisResult = serde_json::from_str(&json).unwrap();
 
-        assert_eq!(result.ignored_findings.len(), deserialized.ignored_findings.len());
+        assert_eq!(
+            result.ignored_findings.len(),
+            deserialized.ignored_findings.len()
+        );
     }
 
     #[test]

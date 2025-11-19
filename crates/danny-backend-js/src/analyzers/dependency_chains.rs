@@ -1,8 +1,8 @@
 //! Dependency chain analysis - converts Fob's dependency chain data to Danny findings.
 
 use danny_core::Finding;
-use fob::graph::{ModuleGraph, dependency_chain::DependencyChain};
-use std::path::PathBuf;
+use fob::graph::{dependency_chain::DependencyChain, ModuleGraph};
+use std::path::Path;
 
 /// Analyzer for dependency chain findings.
 pub struct DependencyChainAnalyzer;
@@ -46,8 +46,7 @@ impl DependencyChainAnalyzer {
     }
 
     /// Check if a path is virtual (should be filtered).
-    fn is_virtual_path(path: &PathBuf) -> bool {
+    fn is_virtual_path(path: &Path) -> bool {
         path.to_string_lossy().starts_with("virtual:")
     }
 }
-
