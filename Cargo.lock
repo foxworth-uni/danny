@@ -647,7 +647,7 @@ dependencies = [
 
 [[package]]
 name = "danny-backend-js"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "async-trait",
  "danny-core",
@@ -668,7 +668,7 @@ dependencies = [
 
 [[package]]
 name = "danny-cli"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "anyhow",
  "chrono",
@@ -694,7 +694,7 @@ dependencies = [
 
 [[package]]
 name = "danny-config"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "async-trait",
  "chrono",
@@ -710,7 +710,7 @@ dependencies = [
 
 [[package]]
 name = "danny-core"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "proptest",
  "serde",
@@ -722,7 +722,7 @@ dependencies = [
 
 [[package]]
 name = "danny-deps"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -747,7 +747,7 @@ dependencies = [
 
 [[package]]
 name = "danny-fs"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "async-trait",
  "ignore",
@@ -759,7 +759,7 @@ dependencies = [
 
 [[package]]
 name = "danny-info"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -776,7 +776,7 @@ dependencies = [
 
 [[package]]
 name = "danny-rule-engine"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "anyhow",
  "async-trait",
