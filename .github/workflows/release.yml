@@ -13,7 +13,35 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
+  # Run tests before releasing to ensure quality
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Run tests
+        run: cargo test --workspace --all-features
+      
+      - name: Run clippy
+        run: cargo clippy --workspace --all-features -- -D warnings
+
   create-release:
+    needs: test  # Only create release if tests pass
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.get_version.outputs.version }}
@@ -31,7 +59,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-bottles:
-    needs: create-release
+    needs: create-release  # Only build bottles after release is created
     strategy:
       matrix:
         include:
